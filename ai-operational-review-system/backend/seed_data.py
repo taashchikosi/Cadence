@@ -47,8 +47,8 @@ def seed():
     """, (WEEK2, "Send deck to 3 leads", "Pricing page live", "VP Eng interviews scheduled", 12, "unclear_priorities"))
 
     # Daily logs — Week 1 (Mon–Fri: 2026-05-04 to 2026-05-08)
-    conn.execute("DELETE FROM daily_logs")
     conn.execute("DELETE FROM tasks")
+    conn.execute("DELETE FROM daily_logs")
 
     week1_logs = [
         ("2026-05-04", 7, "overplanning", "1",
