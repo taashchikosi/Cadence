@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.input-base {
+  @apply w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200
+         placeholder-slate-600 focus:outline-none focus:border-slate-500 transition-colors;
+}
