@@ -26,31 +26,37 @@ AVOID: motivational speaker energy, aggressive authority, startup language, exce
 
 You make the user feel: calm, focused, strategically aware, and operationally capable."""
 
-MONDAY_CONTEXT = """
-You are conducting a structured Monday planning session. Your goal is to collect:
-1. Top 3–5 priorities for the week (specific, outcome-oriented — not vague goals)
-2. Estimated deep work hours available this week
-3. Predicted main derailers (what might prevent completion)
+WEEKLY_CONTEXT = """
+You are conducting a combined Friday afternoon review and planning session. This is the most important operational conversation of the week.
 
-Ask one thing at a time. Probe for specificity when priorities are vague. Once you have all information, summarize clearly and ask for confirmation. When the user confirms, output a JSON block EXACTLY like this on a new line:
-EXTRACTED:{"priorities":["...","..."],"deep_work_hours":0,"derailers":["..."]}
-"""
+You will run this in two parts — complete Part 1 fully before moving to Part 2.
 
-FRIDAY_CONTEXT = """
-You are conducting a structured Friday review session. Your goal is to collect:
-1. Outcome of each priority (done / partial / deferred / dropped) with brief explanation
-2. Time allocation this week across: deep work, admin, meetings, reactive work, learning, low-leverage tasks (in hours)
-3. Weekly execution score (1–10) — how well they executed, not how they feel about it
-4. A brief honest reflection on what determined this week's outcome
+PART 1 — WEEK REVIEW:
+Collect the following, one area at a time:
+1. Outcome of each stated priority this week (done / partial / deferred / dropped) with a brief honest explanation
+2. Time allocation across: deep work, admin, meetings, reactive work, learning, low-leverage tasks (in hours)
+3. Execution score (1–10) — operational execution quality, not how they feel about the week
+4. A candid reflection: what single factor most determined this week's outcome?
 
-Ask one area at a time. Be direct about what you observe. Do not soften. Once complete, summarize and ask for confirmation. When confirmed, output:
-EXTRACTED:{"priority_outcomes":{"p1":"done","p2":"partial"},"time_allocation":{"deep_work":0,"admin":0,"meetings":0,"reactive":0,"learning":0,"low_leverage":0},"execution_score":0,"reflection":"..."}
+PART 2 — NEXT WEEK PLANNING:
+Transition naturally. Collect:
+1. Top 3–5 priorities for next week — specific, outcome-oriented commitments (not activities)
+2. Estimated deep work hours available
+3. Predicted main derailers
+
+Rules:
+- Ask one thing at a time
+- Probe for specificity when answers are vague or generic
+- Do not soften findings or offer reassurance
+- Once BOTH parts are complete, give a clean summary and ask for confirmation
+- When the user confirms, output EXACTLY this on a new line:
+EXTRACTED:{"review":{"priority_outcomes":{"p1":"done","p2":"partial","p3":"deferred"},"time_allocation":{"deep_work":0,"admin":0,"meetings":0,"reactive":0,"learning":0,"low_leverage":0},"execution_score":0,"reflection":"..."},"planning":{"priorities":["...","..."],"deep_work_hours":0,"derailers":["..."]}}
 """
 
 
 def get_system_prompt(voice, session_type, user_profile, rag_context=""):
     base = FEMALE_SYSTEM if voice == "female" else MALE_SYSTEM
-    session_ctx = MONDAY_CONTEXT if session_type == "monday" else FRIDAY_CONTEXT
+    session_ctx = WEEKLY_CONTEXT
 
     profile_ctx = ""
     if user_profile:
@@ -100,20 +106,18 @@ def extract_data(response_text):
 
 def opening_message(voice, session_type, user_profile, recent_context=""):
     """Generate the opening message for a new conversation session."""
-    name = user_profile.get("role_type", "")
     if not ANTHROPIC_API_KEY:
-        if session_type == "monday":
-            return "Good morning. Let's set your week. What are the top priorities you're committing to this week — specific outcomes, not activities?"
-        return "Let's review your week. Walk me through each priority — what was the outcome and what drove it?"
+        return "It's Friday. Let's close this week and set the next one. Walk me through each of your priorities — what was the outcome, and what drove it?"
 
     rag_chunks = retrieve_relevant_chunks(session_type, top_k=2)
     rag_context = format_rag_context(rag_chunks)
     system = get_system_prompt(voice, session_type, user_profile, rag_context)
 
     prompt = (
-        f"Open this {session_type} session. Greet the user concisely. "
-        f"{'Context from recent weeks: ' + recent_context if recent_context else ''}"
-        "Then ask the first question. Keep it under 3 sentences total."
+        "It's Friday afternoon. Open the weekly review and planning session. "
+        "Greet the user briefly — no more than 2 sentences. "
+        f"{'Note from last week: ' + recent_context if recent_context else ''} "
+        "Then ask about the first priority outcome. Keep it tight."
     )
 
     try:
@@ -126,29 +130,21 @@ def opening_message(voice, session_type, user_profile, recent_context=""):
         )
         return response.content[0].text
     except Exception:
-        if session_type == "monday":
-            return "Good morning. Let's set your week. What are the top priorities you're committing to?"
-        return "Let's close your week. Walk me through each priority — what was the outcome?"
+        return "It's Friday. Let's close this week and set the next one. Walk me through each of your priorities — what was the outcome, and what drove it?"
 
 
 def _mock_response(session_type, message_count):
-    if session_type == "monday":
-        responses = [
-            "Let's set your week. What are the top 3–5 priorities you're committing to? Be specific about the outcome, not just the activity.",
-            "Good. What's priority two?",
-            "Understood. And your third?",
-            "How many hours of deep, uninterrupted work do you realistically have available this week?",
-            "What's the most likely thing that will prevent you from completing these priorities?",
-            "To confirm: I have your priorities, your estimated deep work hours, and your predicted derailer. Shall I lock this in?\n\nEXTRACTED:{\"priorities\":[\"Complete Q3 report\"],\"deep_work_hours\":12,\"derailers\":[\"meetings\"]}",
-        ]
-    else:
-        responses = [
-            "Let's review your week. Walk me through priority one — what was the outcome?",
-            "And priority two?",
-            "How did you allocate your time this week? Give me hours across: deep work, meetings, admin, reactive work, learning, and low-leverage tasks.",
-            "On a scale of 1–10, how effectively did you execute this week — not how you feel about it, but how well you operated?",
-            "What single factor most determined this week's outcome?",
-            "Here's what I have from this week's review. Shall I lock this in?\n\nEXTRACTED:{\"priority_outcomes\":{\"p1\":\"done\",\"p2\":\"partial\"},\"time_allocation\":{\"deep_work\":8,\"admin\":4,\"meetings\":10,\"reactive\":8,\"learning\":2,\"low_leverage\":3},\"execution_score\":6,\"reflection\":\"Meetings consumed the week.\"}",
-        ]
+    responses = [
+        "It's Friday. Let's close this week and set the next one. Walk me through priority one — what was the outcome and what drove it?",
+        "Understood. And priority two?",
+        "How did you allocate your time this week? Give me hours across: deep work, meetings, admin, reactive work, learning, and low-leverage tasks.",
+        "Execution score for the week — 1 to 10. Operational quality, not how you feel about it.",
+        "What single factor most determined this week's outcome?",
+        "Good. Now next week. What are the 3–5 priorities you're committing to? Specific outcomes, not activities.",
+        "What's priority two?",
+        "How many hours of protected deep work do you realistically have available?",
+        "What's most likely to derail completion?",
+        "Here's what I have. Shall I lock in the review and next week's plan?\n\nEXTRACTED:{\"review\":{\"priority_outcomes\":{\"p1\":\"done\",\"p2\":\"partial\",\"p3\":\"deferred\"},\"time_allocation\":{\"deep_work\":8,\"admin\":4,\"meetings\":10,\"reactive\":8,\"learning\":2,\"low_leverage\":3},\"execution_score\":6,\"reflection\":\"Meetings consumed the week.\"},\"planning\":{\"priorities\":[\"Close Series A lead\",\"Finalise pricing model\",\"Hire VP Eng\"],\"deep_work_hours\":12,\"derailers\":[\"meetings\"]}}",
+    ]
     idx = min(message_count // 2, len(responses) - 1)
     return responses[idx]

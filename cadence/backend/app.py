@@ -215,8 +215,47 @@ def send_message():
 
 
 def _save_extracted_data(user_id, session_type, week_start_date, data):
-    if session_type == "monday":
-        priorities = data.get("priorities", [])
+    # Combined weekly session — saves both review (current week) and planning (next week)
+    review_data   = data.get("review", data)   # fallback: treat whole data as review
+    planning_data = data.get("planning", {})
+
+    outcomes = review_data.get("priority_outcomes", {})
+    ta       = review_data.get("time_allocation", {})
+
+    # Save Friday review for current week
+    execute("""
+        INSERT INTO weekly_friday_reviews
+            (user_id, week_start_date, priority_1_status, priority_2_status,
+             priority_3_status, deep_work_hours, admin_hours, meetings_hours,
+             reactive_work_hours, learning_hours, low_leverage_hours,
+             weekly_execution_score, reflection_text)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT (user_id, week_start_date) DO UPDATE SET
+            priority_1_status=EXCLUDED.priority_1_status,
+            priority_2_status=EXCLUDED.priority_2_status,
+            priority_3_status=EXCLUDED.priority_3_status,
+            deep_work_hours=EXCLUDED.deep_work_hours,
+            admin_hours=EXCLUDED.admin_hours,
+            meetings_hours=EXCLUDED.meetings_hours,
+            reactive_work_hours=EXCLUDED.reactive_work_hours,
+            learning_hours=EXCLUDED.learning_hours,
+            low_leverage_hours=EXCLUDED.low_leverage_hours,
+            weekly_execution_score=EXCLUDED.weekly_execution_score,
+            reflection_text=EXCLUDED.reflection_text
+    """, (
+        user_id, week_start_date,
+        outcomes.get("p1"), outcomes.get("p2"), outcomes.get("p3"),
+        ta.get("deep_work", 0), ta.get("admin", 0), ta.get("meetings", 0),
+        ta.get("reactive", 0), ta.get("learning", 0), ta.get("low_leverage", 0),
+        review_data.get("execution_score"),
+        review_data.get("reflection"),
+    ))
+
+    # Save Monday planning for NEXT week
+    if planning_data:
+        from datetime import date, timedelta
+        next_week = (date.fromisoformat(str(week_start_date)) + timedelta(days=7)).isoformat()
+        priorities = planning_data.get("priorities", [])
         execute("""
             INSERT INTO weekly_monday_inputs
                 (user_id, week_start_date, priority_1, priority_2, priority_3,
@@ -229,44 +268,14 @@ def _save_extracted_data(user_id, session_type, week_start_date, data):
                 estimated_deep_work_hours=EXCLUDED.estimated_deep_work_hours,
                 predicted_main_derailer=EXCLUDED.predicted_main_derailer
         """, (
-            user_id, week_start_date,
+            user_id, next_week,
             priorities[0] if len(priorities) > 0 else None,
             priorities[1] if len(priorities) > 1 else None,
             priorities[2] if len(priorities) > 2 else None,
             priorities[3] if len(priorities) > 3 else None,
             priorities[4] if len(priorities) > 4 else None,
-            data.get("deep_work_hours"),
-            ", ".join(data.get("derailers", [])),
-        ))
-    elif session_type == "friday":
-        outcomes = data.get("priority_outcomes", {})
-        ta = data.get("time_allocation", {})
-        execute("""
-            INSERT INTO weekly_friday_reviews
-                (user_id, week_start_date, priority_1_status, priority_2_status,
-                 priority_3_status, deep_work_hours, admin_hours, meetings_hours,
-                 reactive_work_hours, learning_hours, low_leverage_hours,
-                 weekly_execution_score, reflection_text)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (user_id, week_start_date) DO UPDATE SET
-                priority_1_status=EXCLUDED.priority_1_status,
-                priority_2_status=EXCLUDED.priority_2_status,
-                priority_3_status=EXCLUDED.priority_3_status,
-                deep_work_hours=EXCLUDED.deep_work_hours,
-                admin_hours=EXCLUDED.admin_hours,
-                meetings_hours=EXCLUDED.meetings_hours,
-                reactive_work_hours=EXCLUDED.reactive_work_hours,
-                learning_hours=EXCLUDED.learning_hours,
-                low_leverage_hours=EXCLUDED.low_leverage_hours,
-                weekly_execution_score=EXCLUDED.weekly_execution_score,
-                reflection_text=EXCLUDED.reflection_text
-        """, (
-            user_id, week_start_date,
-            outcomes.get("p1"), outcomes.get("p2"), outcomes.get("p3"),
-            ta.get("deep_work", 0), ta.get("admin", 0), ta.get("meetings", 0),
-            ta.get("reactive", 0), ta.get("learning", 0), ta.get("low_leverage", 0),
-            data.get("execution_score"),
-            data.get("reflection"),
+            planning_data.get("deep_work_hours"),
+            ", ".join(planning_data.get("derailers", [])),
         ))
 
 
