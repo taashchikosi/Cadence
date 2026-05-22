@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "./context/AuthContext";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import ChatInterface from "./components/chat/ChatInterface";
 import ReportTab from "./components/report/ReportTab";
@@ -21,25 +18,13 @@ const TABS = [
 ];
 
 export default function App() {
-  const { user, loading: authLoading, signOut } = useAuth();
-  const [authView, setAuthView] = useState("login");
-  const [tab, setTab]           = useState("dashboard");
-  const [profile, setProfile]   = useState(null);
+  const [tab, setTab]         = useState("dashboard");
+  const [profile, setProfile] = useState(null);
   const weekStart = mondayOfWeek();
 
   useEffect(() => {
-    if (user) {
-      api.getProfile().then(p => setProfile(p)).catch(() => {});
-    }
-  }, [user]);
-
-  if (authLoading) return <FullPageLoader />;
-
-  if (!user) {
-    return authView === "login"
-      ? <LoginPage onSwitch={() => setAuthView("signup")} />
-      : <SignupPage onSwitch={() => setAuthView("login")} />;
-  }
+    api.getProfile().then(p => setProfile(p)).catch(() => {});
+  }, []);
 
   const responseMode = profile?.response_mode   || "text";
   const voicePref    = profile?.voice_preference || "female";
@@ -67,13 +52,7 @@ export default function App() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600 hidden md:block">{user.email}</span>
-            <button onClick={signOut}
-              className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-              Sign out
-            </button>
-          </div>
+          <div className="w-24" />
         </div>
       </header>
 
@@ -95,7 +74,6 @@ export default function App() {
         {tab === "report" && <ReportTab weekStart={weekStart} />}
       </main>
 
-      {/* Friday afternoon reminder */}
       <FridayReminder onStartSession={() => setTab("weekly")} />
     </div>
   );
@@ -106,15 +84,4 @@ function FridayDot() {
   const isFriday = now.getDay() === 5 && now.getHours() >= 13 && now.getHours() < 19;
   if (!isFriday) return null;
   return <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-gold animate-pulse-gold" />;
-}
-
-function FullPageLoader() {
-  return (
-    <div className="min-h-screen bg-dark flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <span className="text-gold font-bold text-3xl tracking-widest">C</span>
-        <span className="text-xs text-gray-600 tracking-widest uppercase animate-pulse">Loading</span>
-      </div>
-    </div>
-  );
 }
