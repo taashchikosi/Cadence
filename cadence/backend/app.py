@@ -1,0 +1,430 @@
+import os
+import json
+from datetime import date, timedelta
+from flask import Flask, request, jsonify, g, send_file
+from flask_cors import CORS
+
+from auth import require_auth
+from database import query, execute
+from metrics import calculate_all_metrics, get_multi_week_metrics
+from pattern_detection import detect_all_patterns
+from prompt_builder import build_weekly_review_prompt
+from llm_service import generate_weekly_review
+from conversation_service import chat, extract_data, opening_message
+from tts_service import synthesize
+from pdf_service import generate_pdf
+from rag_service import ingest_knowledge_base, has_knowledge_base
+
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+
+def current_week_start():
+    today = date.today()
+    return (today - timedelta(days=today.weekday())).isoformat()
+
+
+def get_user_profile(user_id):
+    return query("SELECT * FROM user_profiles WHERE id=%s", (user_id,), one=True)
+
+
+# ---------------------------------------------------------------------------
+# Health
+# ---------------------------------------------------------------------------
+
+@app.route("/api/health")
+def health():
+    return jsonify({"status": "ok", "knowledge_base": has_knowledge_base()})
+
+
+# ---------------------------------------------------------------------------
+# User profile / onboarding
+# ---------------------------------------------------------------------------
+
+@app.route("/api/profile", methods=["GET"])
+@require_auth
+def get_profile():
+    row = get_user_profile(g.user_id)
+    return jsonify(dict(row) if row else None)
+
+
+@app.route("/api/profile", methods=["POST"])
+@require_auth
+def upsert_profile():
+    d = request.json
+    execute("""
+        INSERT INTO user_profiles (id, role_type, self_identified_failure_pattern,
+            typical_week_structure, top_3_active_goals, voice_preference,
+            response_mode, onboarding_complete)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT (id) DO UPDATE SET
+            role_type=EXCLUDED.role_type,
+            self_identified_failure_pattern=EXCLUDED.self_identified_failure_pattern,
+            typical_week_structure=EXCLUDED.typical_week_structure,
+            top_3_active_goals=EXCLUDED.top_3_active_goals,
+            voice_preference=EXCLUDED.voice_preference,
+            response_mode=EXCLUDED.response_mode,
+            onboarding_complete=EXCLUDED.onboarding_complete,
+            updated_at=NOW()
+    """, (
+        g.user_id,
+        d.get("role_type"),
+        d.get("self_identified_failure_pattern"),
+        d.get("typical_week_structure"),
+        d.get("top_3_active_goals"),
+        d.get("voice_preference", "female"),
+        d.get("response_mode", "text"),
+        d.get("onboarding_complete", False),
+    ))
+    return jsonify({"status": "ok"}), 200
+
+
+# ---------------------------------------------------------------------------
+# Daily logs
+# ---------------------------------------------------------------------------
+
+@app.route("/api/daily-log", methods=["POST"])
+@require_auth
+def create_daily_log():
+    d = request.json
+    row = execute("""
+        INSERT INTO daily_logs (user_id, date, execution_score, friction_tag,
+            deep_work_blocks, free_text)
+        VALUES (%s,%s,%s,%s,%s,%s) RETURNING id
+    """, (g.user_id, d["date"], d.get("execution_score"), d.get("friction_tag"),
+          d.get("deep_work_blocks", "0"), d.get("free_text")))
+    log_id = row["id"]
+    for task in d.get("tasks", []):
+        if task.get("description", "").strip():
+            execute(
+                "INSERT INTO tasks (daily_log_id, user_id, description, status, is_planned) "
+                "VALUES (%s,%s,%s,%s,%s)",
+                (log_id, g.user_id, task["description"], task.get("status", "planned"), True)
+            )
+    return jsonify({"status": "ok", "id": str(log_id)}), 201
+
+
+@app.route("/api/daily-logs", methods=["GET"])
+@require_auth
+def get_daily_logs():
+    rows = query(
+        "SELECT * FROM daily_logs WHERE user_id=%s ORDER BY date DESC LIMIT 30",
+        (g.user_id,)
+    )
+    result = []
+    for r in rows:
+        log = dict(r)
+        tasks = query("SELECT * FROM tasks WHERE daily_log_id=%s", (log["id"],))
+        log["tasks"] = [dict(t) for t in tasks]
+        log["id"] = str(log["id"])
+        result.append(log)
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Conversations (Monday + Friday)
+# ---------------------------------------------------------------------------
+
+@app.route("/api/conversation/start", methods=["POST"])
+@require_auth
+def start_conversation():
+    d = request.json
+    session_type = d.get("type")  # "monday" or "friday"
+    week_start = d.get("week_start_date", current_week_start())
+    profile = get_user_profile(g.user_id)
+    profile_dict = dict(profile) if profile else {}
+    voice = profile_dict.get("voice_preference", "female")
+
+    recent_ctx = ""
+    prev_review = query(
+        "SELECT diagnosis FROM ai_reviews WHERE user_id=%s ORDER BY created_at DESC LIMIT 1",
+        (g.user_id,), one=True
+    )
+    if prev_review:
+        recent_ctx = prev_review["diagnosis"]
+
+    opener = opening_message(voice, session_type, profile_dict, recent_ctx)
+
+    session_row = execute("""
+        INSERT INTO conversation_sessions
+            (user_id, session_type, week_start_date, messages, status)
+        VALUES (%s,%s,%s,%s,'active') RETURNING id
+    """, (g.user_id, session_type, week_start,
+          json.dumps([{"role": "assistant", "content": opener}])))
+
+    audio_b64 = None
+    if profile_dict.get("response_mode") == "voice":
+        audio_b64, _ = synthesize(opener, voice)
+
+    return jsonify({
+        "session_id": str(session_row["id"]),
+        "message": opener,
+        "audio": audio_b64,
+    })
+
+
+@app.route("/api/conversation/message", methods=["POST"])
+@require_auth
+def send_message():
+    d = request.json
+    session_id = d["session_id"]
+    user_msg = d["message"]
+
+    session = query(
+        "SELECT * FROM conversation_sessions WHERE id=%s AND user_id=%s",
+        (session_id, g.user_id), one=True
+    )
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+
+    messages = session["messages"] or []
+    messages.append({"role": "user", "content": user_msg})
+
+    profile = get_user_profile(g.user_id)
+    profile_dict = dict(profile) if profile else {}
+    voice = profile_dict.get("voice_preference", "female")
+    session_type = session["session_type"]
+
+    ai_reply = chat(messages, voice, session_type, profile_dict, query_text=user_msg)
+    messages.append({"role": "assistant", "content": ai_reply})
+
+    extracted = extract_data(ai_reply)
+    status = "complete" if extracted else "active"
+
+    execute("""
+        UPDATE conversation_sessions
+        SET messages=%s, extracted_data=%s, status=%s, updated_at=NOW()
+        WHERE id=%s
+    """, (json.dumps(messages), json.dumps(extracted or {}), status, session_id))
+
+    if extracted and status == "complete":
+        _save_extracted_data(g.user_id, session_type,
+                             session["week_start_date"], extracted)
+
+    audio_b64 = None
+    reply_text = ai_reply.replace(f"EXTRACTED:{json.dumps(extracted)}", "").strip() if extracted else ai_reply
+    if profile_dict.get("response_mode") == "voice":
+        audio_b64, _ = synthesize(reply_text, voice)
+
+    return jsonify({
+        "message": reply_text,
+        "audio": audio_b64,
+        "complete": status == "complete",
+        "extracted": extracted,
+    })
+
+
+def _save_extracted_data(user_id, session_type, week_start_date, data):
+    if session_type == "monday":
+        priorities = data.get("priorities", [])
+        execute("""
+            INSERT INTO weekly_monday_inputs
+                (user_id, week_start_date, priority_1, priority_2, priority_3,
+                 priority_4, priority_5, estimated_deep_work_hours, predicted_main_derailer)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (user_id, week_start_date) DO UPDATE SET
+                priority_1=EXCLUDED.priority_1, priority_2=EXCLUDED.priority_2,
+                priority_3=EXCLUDED.priority_3, priority_4=EXCLUDED.priority_4,
+                priority_5=EXCLUDED.priority_5,
+                estimated_deep_work_hours=EXCLUDED.estimated_deep_work_hours,
+                predicted_main_derailer=EXCLUDED.predicted_main_derailer
+        """, (
+            user_id, week_start_date,
+            priorities[0] if len(priorities) > 0 else None,
+            priorities[1] if len(priorities) > 1 else None,
+            priorities[2] if len(priorities) > 2 else None,
+            priorities[3] if len(priorities) > 3 else None,
+            priorities[4] if len(priorities) > 4 else None,
+            data.get("deep_work_hours"),
+            ", ".join(data.get("derailers", [])),
+        ))
+    elif session_type == "friday":
+        outcomes = data.get("priority_outcomes", {})
+        ta = data.get("time_allocation", {})
+        execute("""
+            INSERT INTO weekly_friday_reviews
+                (user_id, week_start_date, priority_1_status, priority_2_status,
+                 priority_3_status, deep_work_hours, admin_hours, meetings_hours,
+                 reactive_work_hours, learning_hours, low_leverage_hours,
+                 weekly_execution_score, reflection_text)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (user_id, week_start_date) DO UPDATE SET
+                priority_1_status=EXCLUDED.priority_1_status,
+                priority_2_status=EXCLUDED.priority_2_status,
+                priority_3_status=EXCLUDED.priority_3_status,
+                deep_work_hours=EXCLUDED.deep_work_hours,
+                admin_hours=EXCLUDED.admin_hours,
+                meetings_hours=EXCLUDED.meetings_hours,
+                reactive_work_hours=EXCLUDED.reactive_work_hours,
+                learning_hours=EXCLUDED.learning_hours,
+                low_leverage_hours=EXCLUDED.low_leverage_hours,
+                weekly_execution_score=EXCLUDED.weekly_execution_score,
+                reflection_text=EXCLUDED.reflection_text
+        """, (
+            user_id, week_start_date,
+            outcomes.get("p1"), outcomes.get("p2"), outcomes.get("p3"),
+            ta.get("deep_work", 0), ta.get("admin", 0), ta.get("meetings", 0),
+            ta.get("reactive", 0), ta.get("learning", 0), ta.get("low_leverage", 0),
+            data.get("execution_score"),
+            data.get("reflection"),
+        ))
+
+
+# ---------------------------------------------------------------------------
+# Reviews
+# ---------------------------------------------------------------------------
+
+@app.route("/api/reviews/generate", methods=["POST"])
+@require_auth
+def generate_review():
+    d = request.json or {}
+    week_start = d.get("week_start_date", current_week_start())
+    profile = get_user_profile(g.user_id)
+    profile_dict = dict(profile) if profile else {}
+
+    metrics = calculate_all_metrics(g.user_id, week_start)
+    patterns = detect_all_patterns(g.user_id, week_start, metrics)
+    prompt = build_weekly_review_prompt(g.user_id, week_start, metrics, patterns, profile_dict)
+    review = generate_weekly_review(prompt)
+
+    execute("""
+        INSERT INTO ai_reviews
+            (user_id, week_start_date, diagnosis, evidence, intervention,
+             maturity_label, raw_response, patterns_detected)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        g.user_id, week_start,
+        review.get("diagnosis"), review.get("evidence"),
+        review.get("intervention"), review.get("maturity_label"),
+        review.get("raw_response"), json.dumps([p["pattern_name"] for p in patterns]),
+    ))
+
+    return jsonify({**review, "week_start_date": week_start, "patterns": patterns})
+
+
+@app.route("/api/reviews", methods=["GET"])
+@require_auth
+def get_reviews():
+    rows = query(
+        "SELECT * FROM ai_reviews WHERE user_id=%s ORDER BY created_at DESC LIMIT 20",
+        (g.user_id,)
+    )
+    return jsonify([{**dict(r), "id": str(r["id"])} for r in rows])
+
+
+# ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
+
+@app.route("/api/dashboard", methods=["GET"])
+@require_auth
+def get_dashboard():
+    week_start = request.args.get("week_start_date", current_week_start())
+    metrics = calculate_all_metrics(g.user_id, week_start)
+    history = get_multi_week_metrics(g.user_id, weeks=8)
+
+    logs = query(
+        "SELECT * FROM daily_logs WHERE user_id=%s ORDER BY date DESC LIMIT 7",
+        (g.user_id,)
+    )
+    logs_with_tasks = []
+    for r in logs:
+        log = dict(r)
+        tasks = query("SELECT * FROM tasks WHERE daily_log_id=%s", (log["id"],))
+        log["tasks"] = [dict(t) for t in tasks]
+        log["id"] = str(log["id"])
+        logs_with_tasks.append(log)
+
+    latest_review = query(
+        "SELECT * FROM ai_reviews WHERE user_id=%s ORDER BY created_at DESC LIMIT 1",
+        (g.user_id,), one=True
+    )
+
+    profile = get_user_profile(g.user_id)
+
+    return jsonify({
+        "metrics": metrics,
+        "metrics_history": history,
+        "recent_logs": logs_with_tasks,
+        "latest_review": dict(latest_review) if latest_review else None,
+        "profile": dict(profile) if profile else None,
+        "week_start_date": week_start,
+    })
+
+
+# ---------------------------------------------------------------------------
+# PDF Report
+# ---------------------------------------------------------------------------
+
+@app.route("/api/report/generate", methods=["POST"])
+@require_auth
+def generate_report():
+    d = request.json or {}
+    week_start = d.get("week_start_date", current_week_start())
+    profile = dict(get_user_profile(g.user_id) or {})
+    metrics = calculate_all_metrics(g.user_id, week_start)
+    patterns = detect_all_patterns(g.user_id, week_start, metrics)
+
+    review = query(
+        "SELECT * FROM ai_reviews WHERE user_id=%s AND week_start_date=%s "
+        "ORDER BY created_at DESC LIMIT 1",
+        (g.user_id, week_start), one=True
+    )
+    friday = query(
+        "SELECT * FROM weekly_friday_reviews WHERE user_id=%s AND week_start_date=%s",
+        (g.user_id, week_start), one=True
+    )
+    monday = query(
+        "SELECT * FROM weekly_monday_inputs WHERE user_id=%s AND week_start_date=%s",
+        (g.user_id, week_start), one=True
+    )
+
+    pdf_buffer = generate_pdf(
+        profile, metrics, patterns,
+        dict(review) if review else None,
+        dict(friday) if friday else None,
+        dict(monday) if monday else None,
+        week_start,
+    )
+
+    return send_file(
+        pdf_buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"cadence-report-{week_start}.pdf",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Knowledge base ingestion
+# ---------------------------------------------------------------------------
+
+@app.route("/api/admin/ingest", methods=["POST"])
+@require_auth
+def ingest():
+    if not request.json or "content" not in request.json:
+        return jsonify({"error": "No content provided"}), 400
+    count = ingest_knowledge_base(request.json["content"])
+    return jsonify({"status": "ok", "chunks_ingested": count})
+
+
+# ---------------------------------------------------------------------------
+# TTS
+# ---------------------------------------------------------------------------
+
+@app.route("/api/tts", methods=["POST"])
+@require_auth
+def tts():
+    d = request.json
+    text = d.get("text", "")
+    profile = get_user_profile(g.user_id)
+    voice = dict(profile).get("voice_preference", "female") if profile else "female"
+    audio, error = synthesize(text, voice)
+    if error and not audio:
+        return jsonify({"error": error}), 500
+    return jsonify({"audio": audio})
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5001))
+    app.run(debug=True, port=port)
