@@ -1,21 +1,24 @@
 import os
 import re
-import anthropic
+from openai import OpenAI
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
+
+
+def _client():
+    return OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 
 def generate_weekly_review(prompt):
-    if not ANTHROPIC_API_KEY:
+    if not DEEPSEEK_API_KEY:
         return _mock_review()
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        msg = client.messages.create(
-            model="claude-opus-4-7",
+        resp = _client().chat.completions.create(
+            model="deepseek-chat",
             max_tokens=1200,
             messages=[{"role": "user", "content": prompt}],
         )
-        return parse_review(msg.content[0].text)
+        return parse_review(resp.choices[0].message.content)
     except Exception as e:
         return {**_mock_review(), "error": str(e)}
 
@@ -47,5 +50,5 @@ def _mock_review():
         ),
         "intervention": "Monday: reduce your daily task list to a hard ceiling of 3 items. Block two 90-minute deep work sessions before 11am on Monday and Wednesday. These are non-negotiable — no meetings scheduled against them.",
         "maturity_label": "Emerging pattern",
-        "raw_response": "[Mock review — set ANTHROPIC_API_KEY to enable real reviews]",
+        "raw_response": "[Mock review — set DEEPSEEK_API_KEY to enable real reviews]",
     }

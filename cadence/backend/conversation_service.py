@@ -1,14 +1,19 @@
 """
 Conversational AI service.
-Manages back-and-forth sessions for Monday planning and Friday review.
+Manages back-and-forth sessions for the combined Friday weekly review + planning session.
 Coach persona is injected from voice profile (male/female).
 """
 import os
 import json
-import anthropic
+from openai import OpenAI
 from rag_service import retrieve_relevant_chunks, format_rag_context
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
+
+
+def _client():
+    return OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+
 
 FEMALE_SYSTEM = """You are an elite chief of staff and operational strategist — calm, composed, intellectually precise. Your name is Cadence.
 
@@ -72,23 +77,20 @@ def get_system_prompt(voice, session_type, user_profile, rag_context=""):
 
 
 def chat(messages, voice, session_type, user_profile, query_text=""):
-    if not ANTHROPIC_API_KEY:
+    if not DEEPSEEK_API_KEY:
         return _mock_response(session_type, len(messages))
 
     rag_chunks = retrieve_relevant_chunks(query_text or session_type, top_k=3)
     rag_context = format_rag_context(rag_chunks)
-
     system = get_system_prompt(voice, session_type, user_profile, rag_context)
 
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-opus-4-7",
+        resp = _client().chat.completions.create(
+            model="deepseek-chat",
             max_tokens=512,
-            system=system,
-            messages=messages,
+            messages=[{"role": "system", "content": system}] + messages,
         )
-        return response.content[0].text
+        return resp.choices[0].message.content
     except Exception as e:
         return f"I encountered an issue: {str(e)}. Please try again."
 
@@ -106,7 +108,7 @@ def extract_data(response_text):
 
 def opening_message(voice, session_type, user_profile, recent_context=""):
     """Generate the opening message for a new conversation session."""
-    if not ANTHROPIC_API_KEY:
+    if not DEEPSEEK_API_KEY:
         return "It's Friday. Let's close this week and set the next one. Walk me through each of your priorities — what was the outcome, and what drove it?"
 
     rag_chunks = retrieve_relevant_chunks(session_type, top_k=2)
@@ -121,14 +123,15 @@ def opening_message(voice, session_type, user_profile, recent_context=""):
     )
 
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-opus-4-7",
+        resp = _client().chat.completions.create(
+            model="deepseek-chat",
             max_tokens=200,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
         )
-        return response.content[0].text
+        return resp.choices[0].message.content
     except Exception:
         return "It's Friday. Let's close this week and set the next one. Walk me through each of your priorities — what was the outcome, and what drove it?"
 
