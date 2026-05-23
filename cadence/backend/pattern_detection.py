@@ -18,7 +18,7 @@ def detect_planning_inflation(user_id, week_start_date, metrics):
     dates = week_dates(week_start_date)
     rows = query(
         "SELECT t.status FROM tasks t JOIN daily_logs dl ON t.daily_log_id=dl.id "
-        "WHERE t.user_id=%s AND dl.date=ANY(%s) AND t.is_planned=TRUE",
+        "WHERE t.user_id=%s AND dl.date=ANY(%s::date[]) AND t.is_planned=TRUE",
         (user_id, dates)
     )
     n = len(rows)
@@ -141,7 +141,7 @@ def detect_depth_deprivation(user_id, week_start_date, metrics):
     dwf = metrics.get("deep_work_frequency")
     dates = week_dates(week_start_date)
     rows = query(
-        "SELECT deep_work_blocks FROM daily_logs WHERE user_id=%s AND date=ANY(%s)",
+        "SELECT deep_work_blocks FROM daily_logs WHERE user_id=%s AND date=ANY(%s::date[])",
         (user_id, dates)
     )
     n = len(rows)

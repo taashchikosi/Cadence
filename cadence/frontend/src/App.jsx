@@ -3,6 +3,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import ChatInterface from "./components/chat/ChatInterface";
 import ReportTab from "./components/report/ReportTab";
 import FridayReminder from "./components/shared/FridayReminder";
+import SettingsPanel from "./components/shared/SettingsPanel";
 import { api } from "./api/client";
 
 const mondayOfWeek = () => {
@@ -52,7 +53,9 @@ export default function App() {
             ))}
           </nav>
 
-          <div className="w-24" />
+          <div className="w-24 flex justify-end">
+            <SettingsPanel profile={profile} onUpdate={setProfile} />
+          </div>
         </div>
       </header>
 

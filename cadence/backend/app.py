@@ -296,17 +296,20 @@ def generate_review():
     prompt = build_weekly_review_prompt(g.user_id, week_start, metrics, patterns, profile_dict)
     review = generate_weekly_review(prompt)
 
-    execute("""
-        INSERT INTO ai_reviews
-            (user_id, week_start_date, diagnosis, evidence, intervention,
-             maturity_label, raw_response, patterns_detected)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-    """, (
-        g.user_id, week_start,
-        review.get("diagnosis"), review.get("evidence"),
-        review.get("intervention"), review.get("maturity_label"),
-        review.get("raw_response"), json.dumps([p["pattern_name"] for p in patterns]),
-    ))
+    try:
+        execute("""
+            INSERT INTO ai_reviews
+                (user_id, week_start_date, diagnosis, evidence, intervention,
+                 maturity_label, raw_response, patterns_detected)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            g.user_id, week_start,
+            review.get("diagnosis"), review.get("evidence"),
+            review.get("intervention"), review.get("maturity_label"),
+            review.get("raw_response"), json.dumps([p["pattern_name"] for p in patterns]),
+        ))
+    except Exception:
+        pass
 
     return jsonify({**review, "week_start_date": week_start, "patterns": patterns})
 
@@ -414,6 +417,18 @@ def ingest():
     if not request.json or "content" not in request.json:
         return jsonify({"error": "No content provided"}), 400
     count = ingest_knowledge_base(request.json["content"])
+    return jsonify({"status": "ok", "chunks_ingested": count})
+
+
+@app.route("/api/admin/ingest-from-file", methods=["POST"])
+@require_auth
+def ingest_from_file():
+    kb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "knowledge_base", "books.md"))
+    if not os.path.exists(kb_path):
+        return jsonify({"error": f"Knowledge base file not found: {kb_path}"}), 404
+    with open(kb_path, "r") as f:
+        content = f.read()
+    count = ingest_knowledge_base(content)
     return jsonify({"status": "ok", "chunks_ingested": count})
 
 
