@@ -4,6 +4,7 @@ import ChatInterface from "./components/chat/ChatInterface";
 import ReportTab from "./components/report/ReportTab";
 import FridayReminder from "./components/shared/FridayReminder";
 import SettingsPanel from "./components/shared/SettingsPanel";
+import IntroPage from "./components/shared/IntroPage";
 import { api } from "./api/client";
 
 const mondayOfWeek = () => {
@@ -19,30 +20,46 @@ const TABS = [
 ];
 
 export default function App() {
+  const [entered, setEntered] = useState(() => !!localStorage.getItem("cadence_entered"));
   const [tab, setTab]         = useState("dashboard");
   const [profile, setProfile] = useState(null);
   const weekStart = mondayOfWeek();
 
   useEffect(() => {
-    api.getProfile().then(p => setProfile(p)).catch(() => {});
-  }, []);
+    if (entered) {
+      api.getProfile().then(p => setProfile(p)).catch(() => {});
+    }
+  }, [entered]);
+
+  function handleEnter() {
+    localStorage.setItem("cadence_entered", "1");
+    setEntered(true);
+  }
+
+  if (!entered) return <IntroPage onEnter={handleEnter} />;
 
   const responseMode = profile?.response_mode   || "text";
   const voicePref    = profile?.voice_preference || "female";
 
   return (
-    <div className="min-h-screen bg-dark flex flex-col">
-      <header className="border-b border-dark-border bg-dark-surface sticky top-0 z-10">
+    <div className="min-h-screen bg-black flex flex-col">
+      <header className="border-b border-dark-border bg-dark-surface sticky top-0 z-10"
+        style={{ borderBottomColor: "#1E1E1E" }}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-gold font-bold text-lg tracking-wider">C</span>
-            <span className="text-white font-semibold text-sm tracking-widest uppercase">Cadence</span>
+
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setEntered(false)}>
+            <img src="/logo.png" alt="" className="w-7 h-7 object-contain"
+              onError={e => { e.target.style.display = "none"; }} />
+            <span className="font-['Cinzel',serif] text-gold font-bold text-sm tracking-[0.2em] uppercase"
+              style={{ background: "linear-gradient(135deg, #D4A520, #F0C040, #C46A1F)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              Cadence
+            </span>
           </div>
 
           <nav className="flex gap-1">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                   tab === t.id
                     ? "bg-dark-elevated text-gold border border-gold-muted"
                     : "text-gray-500 hover:text-gray-300 hover:bg-dark-elevated"
@@ -53,7 +70,7 @@ export default function App() {
             ))}
           </nav>
 
-          <div className="w-24 flex justify-end">
+          <div className="w-24 flex justify-end items-center gap-2">
             <SettingsPanel profile={profile} onUpdate={setProfile} />
           </div>
         </div>

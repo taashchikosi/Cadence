@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,7 +7,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background-color: #0A0A0A;
+  background-color: #000000;
   color: #F5F5F5;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -23,7 +23,7 @@ body {
 
   .btn-gold {
     @apply bg-gold hover:bg-gold-light text-black font-semibold text-sm
-           px-4 py-2.5 rounded transition-colors disabled:opacity-40 cursor-pointer;
+           px-4 py-2.5 rounded transition-all disabled:opacity-40 cursor-pointer;
   }
 
   .btn-ghost {
@@ -38,13 +38,41 @@ body {
   .label-xs {
     @apply text-xs font-medium text-gray-500 uppercase tracking-widest;
   }
+
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #8B6914 0%, #D4A520 35%, #F0C040 55%, #FFD700 70%, #C46A1F 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-ember-gradient {
+    background: linear-gradient(90deg, #C46A1F, #E08030, #C46A1F);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glow-gold {
+    box-shadow: 0 0 30px #D4A52044, 0 0 80px #D4A52018;
+  }
+
+  .border-gold-glow {
+    border-color: #D4A52066;
+    box-shadow: 0 0 0 1px #D4A52033 inset;
+  }
+}
+
+/* Radial glow background for intro */
+.intro-bg {
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, #1a0f0022 0%, #000 60%);
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-track { background: #000000; }
 ::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #C9A84C44; }
+::-webkit-scrollbar-thumb:hover { background: #D4A52044; }
 
 .recharts-cartesian-grid-horizontal line,
-.recharts-cartesian-grid-vertical line { stroke: #1f1f1f; }
+.recharts-cartesian-grid-vertical line { stroke: #1a1a1a; }
 .recharts-text { fill: #555; font-size: 11px; }
