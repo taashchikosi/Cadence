@@ -57,7 +57,7 @@ def calculate_priority_completion_rate(user_id, week_start_date):
 def calculate_deep_work_frequency(user_id, week_start_date):
     dates = week_dates(week_start_date)
     rows = query(
-        "SELECT deep_work_blocks FROM daily_logs WHERE user_id=%s AND date = ANY(%s)",
+        "SELECT deep_work_blocks FROM daily_logs WHERE user_id=%s AND date = ANY(%s::date[])",
         (user_id, dates)
     )
     if not rows:
@@ -70,7 +70,7 @@ def calculate_deep_work_frequency(user_id, week_start_date):
 def calculate_friction_pattern_index(user_id, week_start_date):
     dates = week_dates(week_start_date)
     rows = query(
-        "SELECT friction_tag FROM daily_logs WHERE user_id=%s AND date = ANY(%s) "
+        "SELECT friction_tag FROM daily_logs WHERE user_id=%s AND date = ANY(%s::date[]) "
         "AND friction_tag IS NOT NULL",
         (user_id, dates)
     )
@@ -87,7 +87,7 @@ def calculate_friction_pattern_index(user_id, week_start_date):
 def calculate_execution_score_trend(user_id, week_start_date):
     dates = week_dates(week_start_date)
     rows = query(
-        "SELECT execution_score FROM daily_logs WHERE user_id=%s AND date = ANY(%s)",
+        "SELECT execution_score FROM daily_logs WHERE user_id=%s AND date = ANY(%s::date[])",
         (user_id, dates)
     )
     if not rows:
@@ -97,7 +97,7 @@ def calculate_execution_score_trend(user_id, week_start_date):
     prev_start = (date.fromisoformat(str(week_start_date)) - timedelta(days=7)).isoformat()
     prev_dates = week_dates(prev_start)
     prev_rows = query(
-        "SELECT execution_score FROM daily_logs WHERE user_id=%s AND date = ANY(%s)",
+        "SELECT execution_score FROM daily_logs WHERE user_id=%s AND date = ANY(%s::date[])",
         (user_id, prev_dates)
     )
     if not prev_rows:
@@ -114,7 +114,7 @@ def calculate_deferral_rate(user_id, week_start_date):
     dates = week_dates(week_start_date)
     rows = query(
         "SELECT t.status FROM tasks t JOIN daily_logs dl ON t.daily_log_id=dl.id "
-        "WHERE t.user_id=%s AND dl.date = ANY(%s)",
+        "WHERE t.user_id=%s AND dl.date = ANY(%s::date[])",
         (user_id, dates)
     )
     if not rows:
@@ -126,7 +126,7 @@ def calculate_planning_accuracy(user_id, week_start_date):
     dates = week_dates(week_start_date)
     rows = query(
         "SELECT t.status FROM tasks t JOIN daily_logs dl ON t.daily_log_id=dl.id "
-        "WHERE t.user_id=%s AND dl.date = ANY(%s) AND t.is_planned=TRUE",
+        "WHERE t.user_id=%s AND dl.date = ANY(%s::date[]) AND t.is_planned=TRUE",
         (user_id, dates)
     )
     if not rows:
