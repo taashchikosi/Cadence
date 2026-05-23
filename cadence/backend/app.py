@@ -449,6 +449,24 @@ def tts():
     return jsonify({"audio": audio})
 
 
+def _auto_ingest_kb():
+    try:
+        if has_knowledge_base():
+            return
+        kb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "knowledge_base", "books.md"))
+        if not os.path.exists(kb_path):
+            return
+        with open(kb_path, "r") as f:
+            content = f.read()
+        count = ingest_knowledge_base(content)
+        print(f"[startup] Auto-ingested {count} knowledge base chunks.")
+    except Exception as e:
+        print(f"[startup] KB ingest skipped: {e}")
+
+
+_auto_ingest_kb()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
     app.run(debug=True, port=port)
