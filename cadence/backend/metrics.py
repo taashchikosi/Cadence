@@ -188,26 +188,29 @@ def calculate_all_metrics(user_id, week_start_date):
         }
     }
 
-    execute("""
-        INSERT INTO weekly_metrics
-            (user_id, week_start_date, priority_completion_rate, deep_work_frequency,
-             friction_pattern_index, execution_score_trend, deferral_rate,
-             planning_accuracy, avg_execution_score)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT (user_id, week_start_date) DO UPDATE SET
-            priority_completion_rate=EXCLUDED.priority_completion_rate,
-            deep_work_frequency=EXCLUDED.deep_work_frequency,
-            friction_pattern_index=EXCLUDED.friction_pattern_index,
-            execution_score_trend=EXCLUDED.execution_score_trend,
-            deferral_rate=EXCLUDED.deferral_rate,
-            planning_accuracy=EXCLUDED.planning_accuracy,
-            avg_execution_score=EXCLUDED.avg_execution_score,
-            calculated_at=NOW()
-    """, (
-        user_id, week_start_date, pcr, dwf,
-        psycopg2_json(fpi), psycopg2_json(est),
-        dr, pa, metrics["avg_execution_score"]
-    ))
+    try:
+        execute("""
+            INSERT INTO weekly_metrics
+                (user_id, week_start_date, priority_completion_rate, deep_work_frequency,
+                 friction_pattern_index, execution_score_trend, deferral_rate,
+                 planning_accuracy, avg_execution_score)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (user_id, week_start_date) DO UPDATE SET
+                priority_completion_rate=EXCLUDED.priority_completion_rate,
+                deep_work_frequency=EXCLUDED.deep_work_frequency,
+                friction_pattern_index=EXCLUDED.friction_pattern_index,
+                execution_score_trend=EXCLUDED.execution_score_trend,
+                deferral_rate=EXCLUDED.deferral_rate,
+                planning_accuracy=EXCLUDED.planning_accuracy,
+                avg_execution_score=EXCLUDED.avg_execution_score,
+                calculated_at=NOW()
+        """, (
+            user_id, week_start_date, pcr, dwf,
+            psycopg2_json(fpi), psycopg2_json(est),
+            dr, pa, metrics["avg_execution_score"]
+        ))
+    except Exception:
+        pass
 
     return metrics
 
