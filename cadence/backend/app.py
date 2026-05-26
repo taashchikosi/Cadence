@@ -333,8 +333,9 @@ def get_reviews():
 @require_auth
 def get_dashboard():
     week_start = request.args.get("week_start_date", current_week_start())
+    weeks = min(int(request.args.get("weeks", 8)), 26)
     metrics = calculate_all_metrics(g.user_id, week_start)
-    history = get_multi_week_metrics(g.user_id, weeks=8)
+    history = get_multi_week_metrics(g.user_id, weeks=weeks)
 
     logs = query(
         "SELECT * FROM daily_logs WHERE user_id=%s ORDER BY date DESC LIMIT 7",

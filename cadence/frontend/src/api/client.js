@@ -33,8 +33,13 @@ export const api = {
   getProfile:  () => req("/api/profile"),
   saveProfile: (d) => req("/api/profile", { method: "POST", body: JSON.stringify(d) }),
 
-  getDashboard: (weekStart) =>
-    req(`/api/dashboard${weekStart ? `?week_start_date=${weekStart}` : ""}`),
+  getDashboard: (weekStart, weeks) => {
+    const params = new URLSearchParams();
+    if (weekStart) params.set("week_start_date", weekStart);
+    if (weeks)     params.set("weeks", weeks);
+    const qs = params.toString();
+    return req(`/api/dashboard${qs ? `?${qs}` : ""}`);
+  },
 
   getDailyLogs: () => req("/api/daily-logs"),
   postDailyLog: (d) => req("/api/daily-log", { method: "POST", body: JSON.stringify(d) }),
