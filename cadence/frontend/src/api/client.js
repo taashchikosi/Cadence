@@ -13,10 +13,12 @@ async function getToken() {
 
 async function req(path, options = {}) {
   const token = await getToken();
+  const demoUserId = !token ? localStorage.getItem("cadence_demo_user_id") : null;
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(demoUserId ? { "X-Demo-User-Id": demoUserId } : {}),
     },
     ...options,
   });

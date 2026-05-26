@@ -27,7 +27,8 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         auth = request.headers.get("Authorization", "")
         if not auth.startswith("Bearer "):
-            g.user_id = DEMO_USER_ID
+            demo_user_id = request.headers.get("X-Demo-User-Id", DEMO_USER_ID)
+            g.user_id = demo_user_id or DEMO_USER_ID
             return f(*args, **kwargs)
         token = auth[7:]
         user_id = verify_token(token)

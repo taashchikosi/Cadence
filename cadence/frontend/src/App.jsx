@@ -4,6 +4,7 @@ import ChatInterface from "./components/chat/ChatInterface";
 import ReportTab from "./components/report/ReportTab";
 import FridayReminder from "./components/shared/FridayReminder";
 import SettingsPanel from "./components/shared/SettingsPanel";
+import UserSwitcher from "./components/shared/UserSwitcher";
 import IntroPage from "./components/shared/IntroPage";
 import { api } from "./api/client";
 
@@ -70,7 +71,8 @@ export default function App() {
             ))}
           </nav>
 
-          <div className="w-24 flex justify-end items-center gap-2">
+          <div className="flex items-center gap-3">
+            <UserSwitcher />
             <SettingsPanel profile={profile} onUpdate={setProfile} />
           </div>
         </div>

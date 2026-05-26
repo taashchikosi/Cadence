@@ -14,6 +14,7 @@ from conversation_service import chat, extract_data, opening_message
 from tts_service import synthesize
 from pdf_service import generate_pdf
 from rag_service import ingest_knowledge_base, has_knowledge_base
+from seed_demo import seed_all_users
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -410,6 +411,12 @@ def generate_report():
 # ---------------------------------------------------------------------------
 # Knowledge base ingestion
 # ---------------------------------------------------------------------------
+
+@app.route("/api/admin/seed-demo", methods=["POST"])
+def seed_demo():
+    result = seed_all_users()
+    return jsonify(result)
+
 
 @app.route("/api/admin/ingest", methods=["POST"])
 @require_auth
