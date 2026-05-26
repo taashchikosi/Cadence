@@ -7,10 +7,16 @@ def _pct(v):
 
 
 def build_weekly_review_prompt(user_id, week_start_date, metrics, patterns, user_profile):
-    chunks = retrieve_relevant_chunks(
-        f"executive performance weekly review operational failure patterns {week_start_date}",
-        top_k=6
-    )
+    fpi_tag   = (metrics.get("friction_pattern_index") or {}).get("tag", "")
+    pat_names = " ".join(p["pattern_name"] for p in patterns) if patterns else ""
+    role      = user_profile.get("role_type", "executive") if user_profile else "executive"
+
+    rag_query = (
+        f"{pat_names} {fpi_tag} {role} intervention strategy "
+        f"priority execution deep work planning leadership"
+    ).strip()
+
+    chunks = retrieve_relevant_chunks(rag_query, top_k=8)
     rag_context = format_rag_context(chunks)
 
     friday = query(
@@ -101,7 +107,7 @@ Intervention given: {prev_review['intervention']}""")
 [4–6 bullet points. Each must cite specific data from above. No generic statements. Where applicable, cite the relevant framework from the knowledge base in parentheses.]
 
 **INTERVENTION**
-[One concrete, specific action for next week. Not a principle — an implementation instruction.]
+[One concrete, specific action for next week — an implementation instruction, not a principle. You MUST ground this in a specific framework or principle from the KNOWLEDGE BASE above. Cite the author by name and the concept explicitly. Format: the action itself, then on a new line — "Grounded in [Author's] [concept/book]: [one sentence explaining why this principle applies here]."]
 
 **MATURITY LABEL**
 [Exactly one of: "Early signal, not confirmed pattern" / "Emerging pattern" / "Confirmed pattern"]
