@@ -14,26 +14,17 @@ export default function IntroPage({ onEnter }) {
 
       {/* Logo */}
       <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0ms" }}>
-        <div className="mb-8 relative">
-          {/* Try real logo first, fall back to SVG */}
+        <div className="mb-10 relative">
           <img
             src="/Logo.png"
             alt="Cadence"
-            className="w-64 h-64 object-contain"
+            className="w-96 h-96 object-contain"
             onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "block"; }}
           />
           <div style={{ display: "none" }}>
             <CadenceLogo />
           </div>
         </div>
-
-        {/* Wordmark */}
-        <h1 className="font-['Cinzel',serif] text-5xl font-bold tracking-[0.3em] text-gold-gradient mb-2 uppercase">
-          Cadence
-        </h1>
-        <p className="text-ember-gradient text-xs font-semibold tracking-[0.35em] uppercase mb-12">
-          Calibrate Your Execution
-        </p>
       </div>
 
       {/* Divider */}
