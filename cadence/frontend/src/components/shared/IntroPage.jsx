@@ -30,11 +30,24 @@ export default function IntroPage({ onEnter }) {
       {/* Divider */}
       <div className="w-px h-12 bg-gradient-to-b from-transparent via-gold-muted to-transparent mb-10 animate-fade-in" style={{ animationDelay: "300ms" }} />
 
-      {/* Description */}
-      <div className="max-w-md text-center animate-fade-in" style={{ animationDelay: "400ms" }}>
+      {/* What it is */}
+      <div className="max-w-md text-center space-y-4 mb-8 animate-fade-in" style={{ animationDelay: "400ms" }}>
+        <p className="text-white text-base font-semibold tracking-wide">
+          Your AI-powered weekly operating system.
+        </p>
         <p className="text-gray-400 text-sm leading-relaxed">
+          Plan your week with strategic precision. Track your execution daily. Review your performance with honest diagnosis — and close the gap between who you intend to be as a leader and how you actually show up.
+        </p>
+      </div>
+
+      {/* Divider 2 */}
+      <div className="w-16 h-px mb-8 animate-fade-in" style={{ animationDelay: "450ms", background: "linear-gradient(90deg, transparent, #8B6914, transparent)" }} />
+
+      {/* Authors */}
+      <div className="max-w-md text-center animate-fade-in" style={{ animationDelay: "500ms" }}>
+        <p className="text-gray-600 text-xs leading-relaxed">
           Grounded in the principles of the world's most respected thinkers on leadership and execution —{" "}
-          <span className="text-gray-300">Cal Newport, Greg McKeown, James Clear, Ray Dalio,</span> and more.
+          <span className="text-gray-400">Cal Newport, Greg McKeown, James Clear, Ray Dalio,</span> and more.
         </p>
       </div>
 
