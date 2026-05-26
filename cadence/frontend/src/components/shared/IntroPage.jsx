@@ -31,26 +31,11 @@ export default function IntroPage({ onEnter }) {
       <div className="w-px h-12 bg-gradient-to-b from-transparent via-gold-muted to-transparent mb-10 animate-fade-in" style={{ animationDelay: "300ms" }} />
 
       {/* Description */}
-      <div className="max-w-lg text-center space-y-5 animate-fade-in" style={{ animationDelay: "400ms" }}>
-        <p className="text-white text-base leading-relaxed font-light">
-          An AI-powered operational intelligence system for executives who demand precision in how they plan, execute, and review their week.
+      <div className="max-w-md text-center animate-fade-in" style={{ animationDelay: "400ms" }}>
+        <p className="text-gray-400 text-sm leading-relaxed">
+          Grounded in the principles of the world's most respected thinkers on leadership and execution —{" "}
+          <span className="text-gray-300">Cal Newport, Greg McKeown, James Clear, Ray Dalio,</span> and more.
         </p>
-        <p className="text-gray-500 text-sm leading-relaxed">
-          Built for leaders who recognise that the gap between strategy and outcome lives inside the week — and who are willing to diagnose it with honesty.
-        </p>
-        <div className="flex flex-col items-center gap-2 pt-2 text-xs text-gray-600 space-y-1">
-          {[
-            "Weekly planning sessions that force strategic clarity",
-            "Daily execution tracking with friction diagnostics",
-            "AI-generated performance reviews grounded in behavioural science",
-            "Pattern detection across 26 frameworks on leadership & execution",
-          ].map((line, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-gold-muted shrink-0" />
-              <span>{line}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* CTA */}
