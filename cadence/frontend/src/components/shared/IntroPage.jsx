@@ -14,11 +14,11 @@ export default function IntroPage({ onEnter }) {
 
       {/* Logo */}
       <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0ms" }}>
-        <div className="mb-2 relative">
+        <div className="mb-0 relative">
           <img
             src="/Logo.png"
             alt="Cadence"
-            className="w-[480px] h-[480px] object-contain"
+            className="w-[560px] h-[560px] object-contain"
             onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "block"; }}
           />
           <div style={{ display: "none" }}>
@@ -28,7 +28,7 @@ export default function IntroPage({ onEnter }) {
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6 bg-gradient-to-b from-transparent via-gold-muted to-transparent mb-4 animate-fade-in" style={{ animationDelay: "300ms" }} />
+      <div className="w-px h-4 bg-gradient-to-b from-transparent via-gold-muted to-transparent mb-3 animate-fade-in" style={{ animationDelay: "300ms" }} />
 
       {/* What it is */}
       <div className="max-w-md text-center space-y-4 mb-8 animate-fade-in" style={{ animationDelay: "400ms" }}>
