@@ -14,7 +14,7 @@ export default function IntroPage({ onEnter }) {
 
       {/* Logo */}
       <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0ms" }}>
-        <div className="mb-10 relative">
+        <div className="mb-4 relative">
           <img
             src="/Logo.png"
             alt="Cadence"
@@ -28,7 +28,7 @@ export default function IntroPage({ onEnter }) {
       </div>
 
       {/* Divider */}
-      <div className="w-px h-12 bg-gradient-to-b from-transparent via-gold-muted to-transparent mb-10 animate-fade-in" style={{ animationDelay: "300ms" }} />
+      <div className="w-px h-8 bg-gradient-to-b from-transparent via-gold-muted to-transparent mb-6 animate-fade-in" style={{ animationDelay: "300ms" }} />
 
       {/* What it is */}
       <div className="max-w-md text-center space-y-4 mb-8 animate-fade-in" style={{ animationDelay: "400ms" }}>
