@@ -17,7 +17,7 @@ export default function IntroPage({ onEnter }) {
         <div className="mb-8 relative">
           {/* Try real logo first, fall back to SVG */}
           <img
-            src="/logo.png"
+            src="/Logo.png"
             alt="Cadence"
             className="w-64 h-64 object-contain"
             onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "block"; }}

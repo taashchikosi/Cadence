@@ -48,7 +48,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
 
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setEntered(false)}>
-            <img src="/logo.png" alt="" className="w-7 h-7 object-contain"
+            <img src="/Logo.png" alt="" className="w-7 h-7 object-contain"
               onError={e => { e.target.style.display = "none"; }} />
             <span className="font-['Cinzel',serif] text-gold font-bold text-sm tracking-[0.2em] uppercase"
               style={{ background: "linear-gradient(135deg, #D4A520, #F0C040, #C46A1F)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
