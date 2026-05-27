@@ -233,11 +233,14 @@ function MetricCard({ label, value, suffix = "", sub, dot, accent }) {
   return (
     <div
       className="card p-5 flex flex-col gap-2 transition-all duration-300 hover:brightness-110"
-      style={ac ? {
-        borderTopColor: ac.border,
-        borderTopWidth: 2,
-        boxShadow: `0 0 28px ${ac.glow}, 0 1px 0 ${ac.border} inset`,
-      } : {}}
+      style={{
+        background: "#000",
+        ...(ac ? {
+          borderTopColor: ac.border,
+          borderTopWidth: 2,
+          boxShadow: `0 0 28px ${ac.glow}, 0 1px 0 ${ac.border} inset`,
+        } : {}),
+      }}
     >
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-300 uppercase tracking-wider">{label}</span>

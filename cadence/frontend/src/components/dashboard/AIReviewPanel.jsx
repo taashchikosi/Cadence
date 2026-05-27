@@ -10,7 +10,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
   const [expanded, setExpanded] = useState(true);
   if (!review && !generating) {
     return (
-      <div className="card p-5 flex flex-col items-center gap-3 text-center">
+      <div className="card p-5 flex flex-col items-center gap-3 text-center" style={{ background: "#000" }}>
         <p className="text-gray-300 text-sm">No review generated for this week yet.</p>
         <button onClick={onGenerate} className="btn-ghost text-xs">
           Generate Weekly Review
@@ -21,7 +21,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
 
   if (generating) {
     return (
-      <div className="card p-5 flex items-center gap-3">
+      <div className="card p-5 flex items-center gap-3" style={{ background: "#000" }}>
         <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse-gold" />
         <span className="text-white text-sm">Generating diagnostic review…</span>
       </div>
@@ -32,10 +32,11 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
   const maturityStyle = MATURITY_STYLE[maturityKey] || MATURITY_STYLE["early signal, not confirmed pattern"];
 
   return (
-    <div className="card overflow-hidden animate-fade-in">
+    <div className="card overflow-hidden animate-fade-in" style={{ background: "#000" }}>
       <button
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-dark-elevated hover:bg-dark-hover transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-dark-elevated transition-colors"
+        style={{ background: "#0a0a0a" }}
       >
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium text-white uppercase tracking-widest">AI Diagnostic Review</span>

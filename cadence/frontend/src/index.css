@@ -82,13 +82,25 @@ body {
 @media print {
   @page { margin: 16mm 18mm; size: A4; }
 
-  /* Hide everything except the report */
-  body > * { display: none !important; }
-  #printable-report { display: block !important; }
+  /* Visibility approach: hide everything, then reveal the report and all its descendants.
+     This works even when #printable-report is deeply nested inside #root. */
+  body * { visibility: hidden !important; }
+  #printable-report,
+  #printable-report * { visibility: visible !important; }
 
-  /* Reset colours for print */
-  body { background: #fff !important; color: #111 !important; }
-  #printable-report { color: #111 !important; font-family: 'Inter', sans-serif; }
+  /* Position report at top-left so it fills the page */
+  #printable-report {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    background: #fff !important;
+    color: #111 !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  /* Reset page colours */
+  body { background: #fff !important; }
 
   /* Cards become plain bordered boxes */
   #printable-report .card {
@@ -99,25 +111,31 @@ body {
   }
 
   /* Text colours */
-  #printable-report .text-white,
-  #printable-report .text-gray-300 { color: #111 !important; }
+  #printable-report * { color: #111 !important; }
   #printable-report .text-gray-400,
-  #printable-report .text-gray-500,
-  #printable-report .text-gray-600 { color: #555 !important; }
-  #printable-report .text-gold     { color: #8B6914 !important; }
-  #printable-report strong         { color: #000 !important; }
+  #printable-report .text-gray-500 { color: #555 !important; }
+  #printable-report .text-gold,
+  #printable-report [class*="text-neon"],
+  #printable-report [style*="color: #"] { color: #8B6914 !important; }
+  #printable-report strong { color: #000 !important; }
 
   /* Section header rule */
   #printable-report .h-px { background: #ccc !important; }
 
   /* Status badges */
   #printable-report .bg-emerald-900\/40 { background: #d1fae5 !important; }
-  #printable-report .text-emerald-400   { color: #065f46 !important; }
+  #printable-report .text-emerald-400,
+  #printable-report .text-emerald-300   { color: #065f46 !important; }
   #printable-report .bg-amber-900\/40   { background: #fef3c7 !important; }
-  #printable-report .text-amber-400     { color: #92400e !important; }
+  #printable-report .text-amber-400,
+  #printable-report .text-amber-300     { color: #92400e !important; }
   #printable-report .bg-red-900\/30     { background: #fee2e2 !important; }
-  #printable-report .text-red-400       { color: #991b1b !important; }
+  #printable-report .text-red-400,
+  #printable-report .text-red-300       { color: #991b1b !important; }
+
+  /* Gold section headers */
+  #printable-report [class*="text-gold"] { color: #8B6914 !important; }
 
   /* Hide action buttons */
-  .no-print { display: none !important; }
+  .no-print { visibility: hidden !important; display: none !important; }
 }

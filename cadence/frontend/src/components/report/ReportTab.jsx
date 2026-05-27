@@ -48,7 +48,7 @@ function renderMarkdown(text) {
       elements.push(
         <div key={i} className="flex gap-3 mb-2.5">
           <span className="text-gold/60 mt-1 shrink-0">·</span>
-          <p className="text-gray-300 text-sm leading-relaxed">{inlineMarkdown(content)}</p>
+          <p className="text-white text-sm leading-relaxed">{inlineMarkdown(content)}</p>
         </div>
       );
       i++; continue;
@@ -56,7 +56,7 @@ function renderMarkdown(text) {
 
     // Regular paragraph
     elements.push(
-      <p key={i} className="text-gray-300 text-sm leading-relaxed mb-4">
+      <p key={i} className="text-white text-sm leading-relaxed mb-4">
         {inlineMarkdown(line.trim())}
       </p>
     );
@@ -67,7 +67,6 @@ function renderMarkdown(text) {
 }
 
 function inlineMarkdown(text) {
-  // Split on **bold** markers
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -79,6 +78,8 @@ function inlineMarkdown(text) {
 
 const pct = v => v != null ? `${Math.round(v * 100)}%` : "—";
 const num = (v, suffix = "") => v != null ? `${typeof v === "number" ? v.toFixed(1) : v}${suffix}` : "—";
+
+const METRIC_COLORS = ["#F97316", "#D4A520", "#06B6D4", "#F43F5E", "#60A5FA", "#A855F7"];
 
 export default function ReportTab() {
   const currentMonday = getCurrentMonday();
@@ -114,13 +115,13 @@ export default function ReportTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">Executive Coach Report</h2>
-          <p className="text-xs text-gray-600 mt-0.5">
+          <p className="text-xs text-gray-300 mt-0.5">
             Grounded in your weekly data and the knowledge base
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setWeekStart(s => shiftWeek(s, -7))}
-            className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white">
+            className="btn-ghost text-sm px-3 py-1.5 text-white hover:text-white">
             ← Prev
           </button>
           <span className="text-sm font-medium text-gold px-2 min-w-[10rem] text-center">
@@ -128,7 +129,7 @@ export default function ReportTab() {
           </span>
           <button onClick={() => !isCurrentWeek && setWeekStart(s => shiftWeek(s, 7))}
             disabled={isCurrentWeek}
-            className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+            className="btn-ghost text-sm px-3 py-1.5 text-white hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
             Next →
           </button>
         </div>
@@ -136,10 +137,10 @@ export default function ReportTab() {
 
       {/* Generate button */}
       {!report && !loading && (
-        <div className="card p-8 text-center space-y-4">
+        <div className="card p-8 text-center space-y-4" style={{ background: "#000" }}>
           <div className="space-y-1">
             <p className="text-white font-medium">Week of {formatWeek(weekStart)}</p>
-            <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs text-gray-300 max-w-sm mx-auto leading-relaxed">
               Generates a 1-page executive coaching report grounded in principles from the
               knowledge base — citing specific authors and frameworks relevant to your week.
             </p>
@@ -152,9 +153,9 @@ export default function ReportTab() {
       )}
 
       {loading && (
-        <div className="card p-16 flex flex-col items-center gap-4">
+        <div className="card p-16 flex flex-col items-center gap-4" style={{ background: "#000" }}>
           <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">Generating your coaching report…</p>
+          <p className="text-gray-300 text-sm">Generating your coaching report…</p>
         </div>
       )}
 
@@ -164,7 +165,7 @@ export default function ReportTab() {
 
           {/* Metrics summary bar */}
           {report.metrics && (
-            <div className="card p-5 grid grid-cols-6 gap-3 text-center">
+            <div className="card p-5 grid grid-cols-6 gap-3 text-center" style={{ background: "#000" }}>
               {[
                 { label: "Execution", value: num(report.metrics.avg_execution_score, "/10") },
                 { label: "Priorities", value: report.metrics.priority_completion_rate != null
@@ -174,10 +175,10 @@ export default function ReportTab() {
                 { label: "Deep Work", value: num(report.metrics.deep_work_frequency, "h") },
                 { label: "Friction",  value: (report.metrics.friction_pattern_index?.tag || "—")
                     .replace(/_/g, " ") },
-              ].map(({ label, value }) => (
+              ].map(({ label, value }, idx) => (
                 <div key={label} className="flex flex-col gap-1">
-                  <span className="text-xs text-gray-600 uppercase tracking-wider">{label}</span>
-                  <span className="text-sm font-semibold text-white">{value}</span>
+                  <span className="text-xs text-gray-300 uppercase tracking-wider">{label}</span>
+                  <span className="text-sm font-semibold" style={{ color: METRIC_COLORS[idx] }}>{value}</span>
                 </div>
               ))}
             </div>
@@ -185,17 +186,17 @@ export default function ReportTab() {
 
           {/* Priority outcomes */}
           {report.priorities?.length > 0 && (
-            <div className="card p-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+            <div className="card p-5" style={{ background: "#000" }}>
+              <p className="text-xs font-semibold text-white uppercase tracking-widest mb-3">
                 Priority Outcomes
               </p>
               <div className="space-y-2">
                 {report.priorities.map((p, i) => (
                   <div key={i} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-300 truncate mr-4">{p.description}</span>
+                    <span className="text-sm text-white truncate mr-4">{p.description}</span>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                      p.status === "done"     ? "bg-emerald-900/40 text-emerald-400" :
-                      p.status === "partial"  ? "bg-amber-900/40 text-amber-400"    :
+                      p.status === "done"     ? "bg-emerald-900/40 text-emerald-300" :
+                      p.status === "partial"  ? "bg-amber-900/40 text-amber-300"    :
                                                 "bg-red-900/30 text-red-400"
                     }`}>
                       {p.status?.toUpperCase()}
@@ -207,13 +208,13 @@ export default function ReportTab() {
           )}
 
           {/* Main report text */}
-          <div className="card p-8">
+          <div className="card p-8" style={{ background: "#000" }}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                <p className="text-xs font-semibold text-white uppercase tracking-widest">
                   Coaching Report
                 </p>
-                <p className="text-xs text-gray-600 mt-0.5">Week of {formatWeek(weekStart)}</p>
+                <p className="text-xs text-gray-300 mt-0.5">Week of {formatWeek(weekStart)}</p>
               </div>
               <img src="/Logo.png" alt="" className="w-8 h-8 object-contain opacity-60"
                 onError={e => { e.target.style.display = "none"; }} />
