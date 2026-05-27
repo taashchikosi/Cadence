@@ -79,7 +79,7 @@ export default function App() {
       </header>
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
-        {tab === "dashboard" && <Dashboard weekStart={weekStart} />}
+        {tab === "dashboard" && <Dashboard />}
 
         {tab === "weekly" && (
           <div className="card h-[calc(100vh-8rem)] flex flex-col overflow-hidden">

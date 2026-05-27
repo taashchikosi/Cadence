@@ -3,56 +3,56 @@ import { api } from "../../api/client";
 import PerformanceChart from "./PerformanceChart";
 import AIReviewPanel from "./AIReviewPanel";
 
-const PERIODS = [
-  { label: "1 Month",  weeks: 4  },
-  { label: "3 Months", weeks: 13 },
-  { label: "6 Months", weeks: 26 },
-];
-
-const pct    = v  => v  != null ? `${Math.round(v * 100)}%` : "—";
-const num    = v  => v  != null ? String(v) : "—";
-const avg    = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
-const trend  = (arr) => {
-  if (arr.length < 4) return null;
-  const half = Math.floor(arr.length / 2);
-  const early = avg(arr.slice(0, half));
-  const late  = avg(arr.slice(half));
-  if (early == null || late == null) return null;
-  const delta = late - early;
-  if (delta >  0.03) return "up";
-  if (delta < -0.03) return "down";
-  return "flat";
-};
+const pct = v => v != null ? `${Math.round(v * 100)}%` : "—";
 
 const FRICTION_LABELS = {
-  meetings:          "Meetings",
-  reactive_work:     "Reactive Work",
-  context_switching: "Context Switching",
-  decision_avoidance:"Decision Avoidance",
-  overcommitment:    "Overcommitment",
-  admin:             "Admin Overhead",
-  unclear_priorities:"Unclear Priorities",
+  meetings:           "Meetings",
+  reactive_work:      "Reactive Work",
+  context_switching:  "Context Switching",
+  decision_avoidance: "Decision Avoidance",
+  overcommitment:     "Overcommitment",
+  admin:              "Admin Overhead",
+  unclear_priorities: "Unclear Priorities",
 };
 
-export default function Dashboard({ weekStart }) {
-  const [period,     setPeriod]     = useState(PERIODS[1]);
+function getCurrentMonday() {
+  const d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+function shiftWeek(dateStr, days) {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatWeek(dateStr) {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export default function Dashboard() {
+  const [weekStart,  setWeekStart]  = useState(getCurrentMonday);
   const [data,       setData]       = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error,      setError]      = useState(null);
 
+  const currentMonday = getCurrentMonday();
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const d = await api.getDashboard(weekStart, period.weeks);
+      const d = await api.getDashboard(weekStart, 6);
       setData(d);
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [weekStart, period]);
+  }, [weekStart]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -72,144 +72,107 @@ export default function Dashboard({ weekStart }) {
   if (error)   return <p className="text-red-400 text-sm p-6">{error}</p>;
   if (!data)   return null;
 
-  const history      = data.metrics_history || [];
-  const latestReview = data.latest_review;
+  const m       = data.metrics || {};
+  const history = data.metrics_history || [];
+  const fpi     = m.friction_pattern_index || {};
+  const dots    = m.action_dots || {};
 
-  // Period aggregates
-  const scores = history.map(w => w.avg_execution_score).filter(v => v != null);
-  const pcrs   = history.map(w => w.priority_completion_rate).filter(v => v != null);
-  const drs    = history.map(w => w.deferral_rate).filter(v => v != null);
-  const pas    = history.map(w => w.planning_accuracy).filter(v => v != null);
-  const dws    = history.map(w => w.deep_work_frequency).filter(v => v != null);
-
-  const periodAvgScore = avg(scores);
-  const periodAvgPCR   = avg(pcrs);
-  const periodAvgDR    = avg(drs);
-  const periodAvgPA    = avg(pas);
-  const periodAvgDW    = avg(dws);
-
-  const scoreTrend = trend(scores);
-  const pcrTrend   = trend(pcrs);
-  const dsTrend    = trend(drs.map(v => -v)); // lower is better
-
-  // Friction frequency
-  const frictionCounts = {};
-  history.forEach(w => {
-    const fpi = w.friction_pattern_index;
-    if (fpi?.tag) frictionCounts[fpi.tag] = (frictionCounts[fpi.tag] || 0) + 1;
-  });
-  const topFrictions = Object.entries(frictionCounts)
-    .sort((a, b) => b[1] - a[1]).slice(0, 3);
-  const maxFriction = topFrictions[0]?.[1] || 1;
+  const isCurrentWeek = weekStart >= currentMonday;
 
   return (
     <div className="space-y-6 animate-fade-in">
 
-      {/* Header */}
+      {/* Week navigation header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Performance Overview</h2>
-          <p className="text-xs text-gray-600 mt-0.5">{history.length} weeks of data</p>
+          <h2 className="text-lg font-semibold text-white">Performance Review</h2>
+          <p className="text-xs text-gray-600 mt-0.5">
+            {history.length} week{history.length !== 1 ? "s" : ""} of history
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded border border-dark-border overflow-hidden">
-            {PERIODS.map(p => (
-              <button key={p.weeks} onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                  period.weeks === p.weeks
-                    ? "bg-dark-elevated text-gold"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <button onClick={load} className="btn-ghost text-xs px-3 py-1.5">↺</button>
+          <button
+            onClick={() => setWeekStart(s => shiftWeek(s, -7))}
+            className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white">
+            ← Prev
+          </button>
+          <span className="text-sm font-medium text-gold px-2 min-w-[11rem] text-center">
+            {formatWeek(weekStart)}
+          </span>
+          <button
+            onClick={() => !isCurrentWeek && setWeekStart(s => shiftWeek(s, 7))}
+            disabled={isCurrentWeek}
+            className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+            Next →
+          </button>
+          <button onClick={load} className="btn-ghost text-xs px-2 py-1.5 ml-1 text-gray-500">↺</button>
         </div>
       </div>
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-5 gap-3">
-        <KPI label="Execution Score" value={periodAvgScore != null ? periodAvgScore.toFixed(1) : "—"} suffix="/10" trend={scoreTrend} color="gold" />
-        <KPI label="Priority Completion" value={pct(periodAvgPCR)} trend={pcrTrend} color={pcrColor(periodAvgPCR)} />
-        <KPI label="Planning Accuracy"   value={pct(periodAvgPA)}  color={pctColor(periodAvgPA, 0.7, 0.5)} />
-        <KPI label="Deferral Rate"       value={pct(periodAvgDR)}  trend={dsTrend} color={drColor(periodAvgDR)} inverted />
-        <KPI label="Deep Work"           value={periodAvgDW != null ? periodAvgDW.toFixed(1) : "—"} suffix=" blk/day" color="muted" />
-      </div>
-
-      {/* Main chart */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Performance Trend</p>
-          <div className="flex gap-4">
-            {[
-              { color: "#D4A520", label: "Execution Score" },
-              { color: "#D4A52055", label: "Priority Completion" },
-              { color: "#ef4444", label: "Deferral Rate" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <span className="w-5 h-0.5 rounded inline-block" style={{ background: color }} />
-                <span className="text-xs text-gray-600">{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <PerformanceChart history={history} />
-      </div>
-
-      {/* Bottom two-col */}
+      {/* 6 metric cards */}
       <div className="grid grid-cols-3 gap-4">
-
-        {/* Weekly heatmap */}
-        <div className="col-span-2 card p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Weekly Execution Heatmap</p>
-          <WeeklyHeatmap history={history} />
-        </div>
-
-        {/* Friction breakdown */}
-        <div className="card p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Primary Friction</p>
-          {topFrictions.length === 0
-            ? <p className="text-xs text-gray-600">No friction data yet</p>
-            : <div className="space-y-3">
-                {topFrictions.map(([tag, count]) => (
-                  <div key={tag}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-300">{FRICTION_LABELS[tag] || tag.replace(/_/g, " ")}</span>
-                      <span className="text-xs text-gray-600">{count}w</span>
-                    </div>
-                    <div className="h-1 rounded bg-dark-elevated overflow-hidden">
-                      <div className="h-full rounded transition-all duration-500"
-                        style={{ width: `${(count / maxFriction) * 100}%`, background: "linear-gradient(90deg, #8B6914, #D4A520)" }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-          }
-
-          {/* Metric dots legend */}
-          <div className="mt-6 pt-4 border-t border-dark-border space-y-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Score Key</p>
-            {[
-              { color: "#10b981", label: "Strong (8–10)" },
-              { color: "#D4A520", label: "Good (6–7)" },
-              { color: "#f59e0b", label: "Moderate (4–5)" },
-              { color: "#ef4444", label: "Weak (1–3)" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: color, opacity: 0.8 }} />
-                <span className="text-xs text-gray-500">{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <MetricCard
+          label="Execution Score"
+          value={m.avg_execution_score != null ? m.avg_execution_score.toFixed(1) : "—"}
+          suffix="/10"
+          dot={m.avg_execution_score >= 8 ? "green" : m.avg_execution_score >= 6 ? "amber" : m.avg_execution_score != null ? "red" : null}
+          highlight
+        />
+        <MetricCard
+          label="Priority Completion"
+          value={pct(m.priority_completion_rate)}
+          dot={dots.priority_completion_rate}
+        />
+        <MetricCard
+          label="Planning Accuracy"
+          value={pct(m.planning_accuracy)}
+          dot={dots.planning_accuracy}
+        />
+        <MetricCard
+          label="Deferral Rate"
+          value={pct(m.deferral_rate)}
+          dot={dots.deferral_rate}
+        />
+        <MetricCard
+          label="Deep Work"
+          value={m.deep_work_frequency != null ? m.deep_work_frequency.toFixed(1) : "—"}
+          suffix=" blk/day"
+          dot={dots.deep_work_frequency}
+        />
+        <MetricCard
+          label="Primary Friction"
+          value={fpi.tag ? (FRICTION_LABELS[fpi.tag] || fpi.tag.replace(/_/g, " ")) : "—"}
+          sub={fpi.frequency_pct != null ? `${fpi.frequency_pct}% of days` : null}
+        />
       </div>
 
-      {/* AI Review */}
+      {/* Performance trend chart */}
+      {history.length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Performance Trend</p>
+            <div className="flex gap-4">
+              {[
+                { color: "#D4A520",   label: "Execution Score" },
+                { color: "#D4A52055", label: "Priority Completion" },
+                { color: "#ef4444",   label: "Deferral Rate" },
+              ].map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <span className="w-5 h-0.5 rounded inline-block" style={{ background: color }} />
+                  <span className="text-xs text-gray-600">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <PerformanceChart history={history} />
+        </div>
+      )}
+
+      {/* AI Diagnostic Review */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">AI Diagnostic Review</p>
         <AIReviewPanel
-          review={latestReview}
+          review={data.latest_review}
           onGenerate={handleGenerateReview}
           generating={generating}
         />
@@ -221,64 +184,25 @@ export default function Dashboard({ weekStart }) {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function KPI({ label, value, suffix = "", trend, color, inverted }) {
-  const colorMap = {
-    gold:    "text-gold",
-    green:   "text-emerald-400",
-    amber:   "text-amber-400",
-    red:     "text-red-400",
-    muted:   "text-gray-300",
-  };
-  const trendIcon = trend === "up" ? "↑" : trend === "down" ? "↓" : trend === "flat" ? "→" : "";
-  const trendColor = trend === "up"
-    ? (inverted ? "text-red-400" : "text-emerald-400")
-    : trend === "down"
-    ? (inverted ? "text-emerald-400" : "text-red-400")
-    : "text-gray-600";
+function MetricCard({ label, value, suffix = "", sub, dot, highlight }) {
+  const dotColor = dot === "green" ? "#10b981"
+    : dot === "amber" ? "#f59e0b"
+    : dot === "red"   ? "#ef4444"
+    : null;
 
   return (
-    <div className="card p-4 flex flex-col gap-1">
-      <span className="text-xs text-gray-600 uppercase tracking-wider">{label}</span>
-      <div className="flex items-end gap-1.5 mt-1">
-        <span className={`text-2xl font-semibold ${colorMap[color] || "text-white"}`}>{value}{suffix}</span>
-        {trendIcon && <span className={`text-sm mb-0.5 ${trendColor}`}>{trendIcon}</span>}
+    <div className={`card p-5 flex flex-col gap-2 ${highlight ? "border-gold/30" : ""}`}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-gray-500 uppercase tracking-wider">{label}</span>
+        {dotColor && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} />}
       </div>
-    </div>
-  );
-}
-
-function WeeklyHeatmap({ history }) {
-  if (!history.length) return <p className="text-xs text-gray-600">No data yet</p>;
-
-  const weeks = [...history].reverse();
-
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {weeks.map((w, i) => {
-        const score = w.avg_execution_score;
-        const bg = score == null ? "#1a1a1a"
-          : score >= 8  ? "#10b981cc"
-          : score >= 6  ? "#D4A520bb"
-          : score >= 4  ? "#f59e0baa"
-          : "#ef444488";
-        const date = w.week_start_date ? w.week_start_date.slice(5) : "—";
-        return (
-          <div key={i} title={`Week of ${date}\nScore: ${score?.toFixed(1) ?? "—"}`}
-            className="relative group cursor-default"
-            style={{ width: 28, height: 28, borderRadius: 4, background: bg, border: "1px solid #ffffff11" }}>
-            {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
-              <div className="bg-dark-elevated border border-dark-border rounded px-2 py-1 text-xs whitespace-nowrap">
-                <p className="text-gray-400">{date}</p>
-                <p className="text-white font-medium">{score?.toFixed(1) ?? "—"}/10</p>
-                {w.priority_completion_rate != null && (
-                  <p className="text-gray-500">PCR {Math.round(w.priority_completion_rate * 100)}%</p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      <div className="flex items-end gap-1 mt-1">
+        <span className={`text-2xl font-semibold leading-none ${highlight ? "text-gold" : "text-white"}`}>
+          {value}
+        </span>
+        {suffix && <span className="text-sm text-gray-500 mb-0.5">{suffix}</span>}
+      </div>
+      {sub && <p className="text-xs text-gray-600 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -286,25 +210,13 @@ function WeeklyHeatmap({ history }) {
 function LoadingState() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="grid grid-cols-5 gap-3">
-        {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-dark-elevated rounded-lg border border-dark-border" />)}
+      <div className="h-8 w-48 bg-dark-elevated rounded" />
+      <div className="grid grid-cols-3 gap-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-24 bg-dark-elevated rounded-lg border border-dark-border" />
+        ))}
       </div>
       <div className="h-64 bg-dark-elevated rounded-lg border border-dark-border" />
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 h-40 bg-dark-elevated rounded-lg border border-dark-border" />
-        <div className="h-40 bg-dark-elevated rounded-lg border border-dark-border" />
-      </div>
     </div>
   );
 }
-
-// Color helpers
-function pctColor(v, greenThresh = 0.7, amberThresh = 0.5) {
-  if (v == null) return "muted";
-  return v >= greenThresh ? "green" : v >= amberThresh ? "amber" : "red";
-}
-function drColor(v) {
-  if (v == null) return "muted";
-  return v <= 0.2 ? "green" : v <= 0.35 ? "amber" : "red";
-}
-function pcrColor(v) { return pctColor(v, 0.7, 0.5); }

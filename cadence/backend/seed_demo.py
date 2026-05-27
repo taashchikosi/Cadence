@@ -1,4 +1,5 @@
 import os
+import json
 import random
 import psycopg2
 import psycopg2.extras
@@ -536,17 +537,17 @@ def seed_all_users():
         """, profile_rows, template="(%s::uuid,%s,%s,%s,%s)")
 
         # ------------------------------------------------------------------
-        # 3. Compute 26 Mondays going back from today
+        # 3. Compute 4 Mondays going back from today
         # ------------------------------------------------------------------
         today = date.today()
-        # Find most recent Monday (weekday 0)
         days_since_monday = today.weekday()
         current_monday = today - timedelta(days=days_since_monday)
-        # We go back 26 weeks, most recent week last
-        mondays = [current_monday - timedelta(weeks=(25 - i)) for i in range(26)]
+        # 4 weeks (1 month), most recent week last
+        mondays = [current_monday - timedelta(weeks=(3 - i)) for i in range(4)]
 
         total_daily_logs = 0
         total_tasks = 0
+        total_metrics = 0
 
         for user in DEMO_USERS:
             uid = user["id"]
@@ -561,7 +562,7 @@ def seed_all_users():
                 random.seed(hash(seed_key) & 0xFFFFFFFF)
 
                 exec_score, deep_blocks, friction, plan_acc, defer_rate = persona_params(
-                    persona, week_index, len(mondays)
+                    persona, week_index, total_weeks=len(mondays)
                 )
 
                 # Shuffle pool deterministically and pick 5 priorities
@@ -623,17 +624,16 @@ def seed_all_users():
                     total_tasks += len(task_rows)
 
                 # ---- weekly_friday_reviews ----
-                # Only write review for weeks that have passed (friday <= today)
                 friday = monday + timedelta(days=4)
+                p1_s = task_status(plan_acc, defer_rate)
+                p2_s = task_status(plan_acc, defer_rate)
+                p3_s = task_status(plan_acc, defer_rate)
+                p4_s = task_status(plan_acc, defer_rate)
+                p5_s = task_status(plan_acc, defer_rate)
                 if friday <= today:
                     deep_h, meetings_h, admin_h, reactive_h, learning_h, low_h = week_time_allocation(
                         persona, exec_score
                     )
-                    p1_s = task_status(plan_acc, defer_rate)
-                    p2_s = task_status(plan_acc, defer_rate)
-                    p3_s = task_status(plan_acc, defer_rate)
-                    p4_s = task_status(plan_acc, defer_rate)
-                    p5_s = task_status(plan_acc, defer_rate)
                     reflection = random.choice(reflection_pool)
 
                     cur.execute("""
@@ -654,6 +654,53 @@ def seed_all_users():
                         exec_score, reflection,
                     ))
 
+                # ---- weekly_metrics ----
+                day_scores = [ds for (_, _, ds) in week_log_ids]
+                avg_exec = round(sum(day_scores) / len(day_scores), 2) if day_scores else None
+
+                def block_to_num(b):
+                    return 3 if b == "3+" else int(b) if b else 0
+
+                dwf = round(block_to_num(deep_blocks), 2) if week_log_ids else None
+
+                total_t = len(task_rows)
+                deferred_t = sum(1 for t in task_rows if t[3] == "deferred")
+                done_t = sum(1 for t in task_rows if t[3] == "done")
+                dr_val = round(deferred_t / total_t, 3) if total_t > 0 else None
+                pa_val = round(done_t / total_t, 3) if total_t > 0 else None
+
+                done_p = sum(1 for s in [p1_s, p2_s, p3_s, p4_s, p5_s] if s == "done")
+                pcr_val = round(done_p / 5, 3) if friday <= today else None
+
+                fpi_val = ({"tag": friction, "frequency_pct": 100.0, "count": len(week_log_ids)}
+                           if week_log_ids else None)
+                est_val = ({"current_avg": avg_exec, "trend": "stable", "delta": None}
+                           if avg_exec is not None else None)
+
+                cur.execute("""
+                    INSERT INTO weekly_metrics
+                        (user_id, week_start_date, priority_completion_rate,
+                         deep_work_frequency, friction_pattern_index,
+                         execution_score_trend, deferral_rate,
+                         planning_accuracy, avg_execution_score)
+                    VALUES (%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s,%s)
+                    ON CONFLICT (user_id, week_start_date) DO UPDATE SET
+                        priority_completion_rate=EXCLUDED.priority_completion_rate,
+                        deep_work_frequency=EXCLUDED.deep_work_frequency,
+                        friction_pattern_index=EXCLUDED.friction_pattern_index,
+                        execution_score_trend=EXCLUDED.execution_score_trend,
+                        deferral_rate=EXCLUDED.deferral_rate,
+                        planning_accuracy=EXCLUDED.planning_accuracy,
+                        avg_execution_score=EXCLUDED.avg_execution_score,
+                        calculated_at=NOW()
+                """, (
+                    uid, monday.isoformat(),
+                    pcr_val, dwf,
+                    json.dumps(fpi_val), json.dumps(est_val),
+                    dr_val, pa_val, avg_exec,
+                ))
+                total_metrics += 1
+
         conn.commit()
 
     except Exception:
@@ -668,4 +715,5 @@ def seed_all_users():
         "weeks": len(mondays),
         "daily_logs": total_daily_logs,
         "tasks": total_tasks,
+        "metrics_rows": total_metrics,
     }
