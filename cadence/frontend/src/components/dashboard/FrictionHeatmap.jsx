@@ -8,10 +8,16 @@ const ALL_FRICTIONS = [
   { key: "unclear_priorities", label: "Unclear Priorities" },
 ];
 
+function weekLabel(dateStr) {
+  const raw = dateStr ? String(dateStr).slice(0, 10) : null;
+  if (!raw) return "—";
+  const d = new Date(raw + "T12:00:00");
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 function heatStyle(isPrimary, freq) {
-  if (!isPrimary) return { background: "#0C0F1E", border: "1px solid #1E2245" };
+  if (!isPrimary) return { background: "#111", border: "1px solid #222" };
   const t = Math.max(0, Math.min(1, (freq || 50) / 100));
-  // Interpolate purple → amber → orange → red based on intensity
   if (t < 0.4) {
     const a = 0.3 + t * 0.5;
     return { background: `rgba(168,85,247,${a})`, border: "1px solid rgba(168,85,247,0.5)" };
@@ -26,7 +32,7 @@ function heatStyle(isPrimary, freq) {
 
 export default function FrictionHeatmap({ history = [] }) {
   if (!history.length) return (
-    <div className="h-40 flex items-center justify-center text-gray-600 text-sm">
+    <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
       No data yet
     </div>
   );
@@ -39,10 +45,10 @@ export default function FrictionHeatmap({ history = [] }) {
         <table className="text-xs" style={{ borderSpacing: "3px", borderCollapse: "separate" }}>
           <thead>
             <tr>
-              <th className="text-left text-gray-600 font-normal pr-4 pb-2 whitespace-nowrap w-36" />
+              <th className="text-left font-normal pr-4 pb-2 whitespace-nowrap w-36" />
               {weeks.map((w, i) => (
-                <th key={i} className="text-center text-gray-600 font-normal pb-2 min-w-[2.5rem]">
-                  {w.week_start_date ? w.week_start_date.slice(5) : "—"}
+                <th key={i} className="text-center text-gray-300 font-normal pb-2 min-w-[2.5rem]">
+                  {weekLabel(w.week_start_date)}
                 </th>
               ))}
             </tr>
@@ -50,7 +56,7 @@ export default function FrictionHeatmap({ history = [] }) {
           <tbody>
             {ALL_FRICTIONS.map(({ key, label }) => (
               <tr key={key}>
-                <td className="text-gray-500 pr-4 py-0.5 whitespace-nowrap">{label}</td>
+                <td className="text-gray-200 pr-4 py-0.5 whitespace-nowrap">{label}</td>
                 {weeks.map((w, i) => {
                   const fpi = w.friction_pattern_index || {};
                   const isPrimary = fpi.tag === key;
@@ -81,14 +87,14 @@ export default function FrictionHeatmap({ history = [] }) {
 
       {/* Legend */}
       <div className="flex items-center gap-2 pt-1">
-        <span className="text-gray-600 text-[10px]">Low Impact</span>
+        <span className="text-gray-300 text-[10px]">Low Impact</span>
         <div style={{
           flex: 1,
           height: 6,
           borderRadius: 3,
           background: "linear-gradient(to right, rgba(168,85,247,0.4), rgba(249,115,22,0.7), rgba(239,68,68,0.9))",
         }} />
-        <span className="text-gray-600 text-[10px]">High Impact</span>
+        <span className="text-gray-300 text-[10px]">High Impact</span>
       </div>
     </div>
   );

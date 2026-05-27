@@ -91,13 +91,13 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">Performance Review</h2>
-          <p className="text-xs text-gray-600 mt-0.5">
+          <p className="text-xs text-gray-400 mt-0.5">
             {history.length} week{history.length !== 1 ? "s" : ""} of history
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setWeekStart(s => shiftWeek(s, -7))}
-            className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white">
+            className="btn-ghost text-sm px-3 py-1.5 text-white hover:text-white">
             ← Prev
           </button>
           <span className="text-sm font-medium text-gold px-2 min-w-[11rem] text-center">
@@ -105,10 +105,10 @@ export default function Dashboard() {
           </span>
           <button onClick={() => !isCurrentWeek && setWeekStart(s => shiftWeek(s, 7))}
             disabled={isCurrentWeek}
-            className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+            className="btn-ghost text-sm px-3 py-1.5 text-white hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
             Next →
           </button>
-          <button onClick={load} className="btn-ghost text-xs px-2 py-1.5 ml-1 text-gray-500">↺</button>
+          <button onClick={load} className="btn-ghost text-xs px-2 py-1.5 ml-1 text-gray-300">↺</button>
         </div>
       </div>
 
@@ -156,9 +156,9 @@ export default function Dashboard() {
       </div>
 
       {/* Performance trend — 3 lines as % */}
-      <div className="card p-5">
+      <div className="card p-5" style={{ background: "#000" }}>
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Performance Trend</p>
+          <p className="text-xs font-semibold text-white uppercase tracking-widest">Performance Trend</p>
           <div className="flex gap-4">
             {[
               { color: "#F97316", label: "Execution Score",   dash: false },
@@ -167,8 +167,8 @@ export default function Dashboard() {
             ].map(({ color, label, dash }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className="w-5 h-0.5 rounded inline-block"
-                  style={{ background: color, opacity: dash ? 0.7 : 1 }} />
-                <span className="text-xs text-gray-600">{label}</span>
+                  style={{ background: color, opacity: dash ? 0.8 : 1 }} />
+                <span className="text-xs text-gray-300">{label}</span>
               </div>
             ))}
           </div>
@@ -179,15 +179,15 @@ export default function Dashboard() {
       {/* Deep Work + Friction Heatmap side-by-side */}
       <div className="grid grid-cols-2 gap-4">
 
-        <div className="card p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+        <div className="card p-5" style={{ background: "#000" }}>
+          <p className="text-xs font-semibold text-white uppercase tracking-widest mb-4">
             Deep Work Hours / Week
           </p>
           <DeepWorkChart history={history} />
         </div>
 
-        <div className="card p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+        <div className="card p-5" style={{ background: "#000" }}>
+          <p className="text-xs font-semibold text-white uppercase tracking-widest mb-4">
             Friction Heatmap
           </p>
           <FrictionHeatmap history={history} />
@@ -197,7 +197,7 @@ export default function Dashboard() {
 
       {/* AI Diagnostic Review */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+        <p className="text-xs font-semibold text-white uppercase tracking-widest mb-3">
           AI Diagnostic Review
         </p>
         <AIReviewPanel
@@ -240,7 +240,7 @@ function MetricCard({ label, value, suffix = "", sub, dot, accent }) {
       } : {}}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500 uppercase tracking-wider">{label}</span>
+        <span className="text-xs text-gray-300 uppercase tracking-wider">{label}</span>
         {dotColor && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} />}
       </div>
       <div className="flex items-end gap-1 mt-1">
@@ -248,9 +248,9 @@ function MetricCard({ label, value, suffix = "", sub, dot, accent }) {
           style={{ color: ac ? ac.color : "white" }}>
           {value}
         </span>
-        {suffix && <span className="text-sm text-gray-500 mb-0.5">{suffix}</span>}
+        {suffix && <span className="text-sm text-gray-300 mb-0.5">{suffix}</span>}
       </div>
-      {sub && <p className="text-xs text-gray-600 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
     </div>
   );
 }

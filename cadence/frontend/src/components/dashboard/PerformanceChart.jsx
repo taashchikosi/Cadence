@@ -12,11 +12,11 @@ function CustomTooltip({ active, payload, label }) {
   return (
     <div style={{ background: "#131629", border: "1px solid #1E2245" }}
       className="rounded-lg px-3 py-2.5 text-xs shadow-xl">
-      <p className="text-gray-400 mb-2 font-medium">Week of {label}</p>
+      <p className="text-white mb-2 font-medium">Week of {label}</p>
       {payload.map((p, i) => p.value != null && (
         <div key={i} className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-gray-400">{p.name}:</span>
+          <span className="text-gray-300">{p.name}:</span>
           <span className="text-white font-medium">{p.value.toFixed(1)}%</span>
         </div>
       ))}
@@ -31,20 +31,26 @@ export default function PerformanceChart({ history = [] }) {
     </div>
   );
 
-  const data = [...history].reverse().map(w => ({
-    week:     w.week_start_date ? w.week_start_date.slice(5) : "—",
+  const data = [...history].reverse().map(w => {
+    const raw = w.week_start_date ? String(w.week_start_date).slice(0, 10) : null;
+    const label = raw
+      ? new Date(raw + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+      : "—";
+    return {
+    week:     label,
     score:    w.avg_execution_score != null ? +(w.avg_execution_score    * 10).toFixed(1)  : null,
     planning: w.planning_accuracy  != null ? +(w.planning_accuracy      * 100).toFixed(1) : null,
     deferral: w.deferral_rate      != null ? +(w.deferral_rate          * 100).toFixed(1) : null,
-  }));
+    };
+  });
 
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#131629" vertical={false} />
-        <XAxis dataKey="week" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
+        <XAxis dataKey="week" tick={{ fill: "#ccc", fontSize: 10 }} axisLine={false} tickLine={false}
           interval={data.length > 6 ? 1 : 0} />
-        <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
+        <YAxis tick={{ fill: "#ccc", fontSize: 10 }} axisLine={false} tickLine={false}
           domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `${v}%`} />
         <Tooltip content={<CustomTooltip />} />
         <ReferenceLine y={80} stroke={ORANGE} strokeOpacity={0.15} strokeDasharray="4 4" />

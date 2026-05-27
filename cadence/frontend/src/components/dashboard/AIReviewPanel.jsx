@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 const MATURITY_STYLE = {
-  "confirmed pattern":               "text-red-400 border-red-800 bg-red-950",
-  "emerging pattern":                "text-amber-400 border-amber-800 bg-amber-950",
-  "early signal, not confirmed pattern": "text-gray-400 border-dark-border bg-dark-elevated",
+  "confirmed pattern":               "text-red-300 border-red-700 bg-red-950",
+  "emerging pattern":                "text-amber-300 border-amber-700 bg-amber-950",
+  "early signal, not confirmed pattern": "text-gray-200 border-dark-border bg-dark-elevated",
 };
 
 export default function AIReviewPanel({ review, onGenerate, generating }) {
@@ -11,7 +11,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
   if (!review && !generating) {
     return (
       <div className="card p-5 flex flex-col items-center gap-3 text-center">
-        <p className="text-gray-500 text-sm">No review generated for this week yet.</p>
+        <p className="text-gray-300 text-sm">No review generated for this week yet.</p>
         <button onClick={onGenerate} className="btn-ghost text-xs">
           Generate Weekly Review
         </button>
@@ -23,7 +23,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
     return (
       <div className="card p-5 flex items-center gap-3">
         <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse-gold" />
-        <span className="text-gray-400 text-sm">Generating diagnostic review…</span>
+        <span className="text-white text-sm">Generating diagnostic review…</span>
       </div>
     );
   }
@@ -38,12 +38,12 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
         className="w-full flex items-center justify-between px-5 py-4 bg-dark-elevated hover:bg-dark-hover transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="label-xs">AI Diagnostic Review</span>
+          <span className="text-xs font-medium text-white uppercase tracking-widest">AI Diagnostic Review</span>
           {review.week_start_date && (
-            <span className="text-xs text-gray-600">Week of {review.week_start_date}</span>
+            <span className="text-xs text-gray-300">Week of {review.week_start_date}</span>
           )}
         </div>
-        <span className="text-gray-600 text-xs">{expanded ? "▲" : "▼"}</span>
+        <span className="text-gray-300 text-xs">{expanded ? "▲" : "▼"}</span>
       </button>
 
       {expanded && (
@@ -55,7 +55,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
           )}
           {review.evidence && (
             <Section label="Evidence">
-              <div className="text-sm text-gray-300 leading-relaxed space-y-1.5 whitespace-pre-line">
+              <div className="text-sm text-gray-100 leading-relaxed space-y-1.5 whitespace-pre-line">
                 {review.evidence}
               </div>
             </Section>
@@ -69,7 +69,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
           )}
           {review.maturity_label && (
             <div className="flex items-center gap-2">
-              <span className="label-xs">Signal maturity</span>
+              <span className="text-xs font-medium text-gray-300 uppercase tracking-widest">Signal maturity</span>
               <span className={`text-xs px-2 py-0.5 rounded border ${maturityStyle}`}>
                 {review.maturity_label}
               </span>
@@ -84,7 +84,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
 function Section({ label, children }) {
   return (
     <div>
-      <p className="label-xs mb-2">{label}</p>
+      <p className="text-xs font-medium text-gray-300 uppercase tracking-widest mb-2">{label}</p>
       {children}
     </div>
   );
