@@ -4,7 +4,7 @@
  * inverted: true if lower is better (e.g. deferral rate)
  */
 export default function SparkLine({ data = [], inverted = false, width = 64, height = 20 }) {
-  if (!data || data.length < 2) return <span className="text-gray-700 text-xs">—</span>;
+  if (!data || data.length < 2) return <span className="text-gray-400 text-xs">—</span>;
 
   const values = data.map(d => d.value).filter(v => v != null);
   const min = Math.min(...values);

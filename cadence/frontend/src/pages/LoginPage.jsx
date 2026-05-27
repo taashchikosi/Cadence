@@ -20,7 +20,7 @@ export default function LoginPage({ onSwitch }) {
   return (
     <AuthLayout>
       <h2 className="text-2xl font-semibold text-white mb-1">Sign in</h2>
-      <p className="text-gray-500 text-sm mb-8">Your operational review awaits.</p>
+      <p className="text-gray-300 text-sm mb-8">Your operational review awaits.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -39,7 +39,7 @@ export default function LoginPage({ onSwitch }) {
         </button>
       </form>
 
-      <p className="text-center text-sm text-gray-600 mt-6">
+      <p className="text-center text-sm text-gray-300 mt-6">
         No account?{" "}
         <button onClick={onSwitch} className="text-gold hover:text-gold-light transition-colors">
           Create one
@@ -56,7 +56,7 @@ function AuthLayout({ children }) {
         <div className="text-center mb-10">
           <span className="text-4xl font-bold text-gold tracking-wider">C</span>
           <h1 className="text-xl font-semibold text-white tracking-widest uppercase mt-1">Cadence</h1>
-          <p className="text-xs text-gray-600 tracking-widest uppercase mt-1">Discipline Today. Destiny Tomorrow.</p>
+          <p className="text-xs text-gray-400 tracking-widest uppercase mt-1">Discipline Today. Destiny Tomorrow.</p>
         </div>
         <div className="card p-8">
           {children}

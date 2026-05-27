@@ -33,7 +33,7 @@ export default function SettingsPanel({ profile, onUpdate }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-gray-300 hover:bg-dark-elevated transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded text-gray-300 hover:text-white hover:bg-dark-elevated transition-colors"
         title="Settings"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -47,7 +47,7 @@ export default function SettingsPanel({ profile, onUpdate }) {
           <p className="text-xs font-semibold text-gold uppercase tracking-wider">Preferences</p>
 
           <div>
-            <p className="text-xs text-gray-500 mb-2">Response mode</p>
+            <p className="text-xs text-gray-300 mb-2">Response mode</p>
             <div className="flex gap-2">
               {["text", "voice"].map(m => (
                 <button
@@ -56,7 +56,7 @@ export default function SettingsPanel({ profile, onUpdate }) {
                   className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
                     mode === m
                       ? "bg-gold text-black"
-                      : "bg-dark-elevated text-gray-400 hover:text-white"
+                      : "bg-dark-elevated text-gray-200 hover:text-white"
                   }`}
                 >
                   {m}
@@ -67,7 +67,7 @@ export default function SettingsPanel({ profile, onUpdate }) {
 
           {mode === "voice" && (
             <div>
-              <p className="text-xs text-gray-500 mb-2">Voice</p>
+              <p className="text-xs text-gray-300 mb-2">Voice</p>
               <div className="flex gap-2">
                 {["female", "male"].map(v => (
                   <button
@@ -76,7 +76,7 @@ export default function SettingsPanel({ profile, onUpdate }) {
                     className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
                       voice === v
                         ? "bg-gold text-black"
-                        : "bg-dark-elevated text-gray-400 hover:text-white"
+                        : "bg-dark-elevated text-gray-200 hover:text-white"
                     }`}
                   >
                     {v}
@@ -86,7 +86,7 @@ export default function SettingsPanel({ profile, onUpdate }) {
             </div>
           )}
 
-          {saving && <p className="text-xs text-gray-600">Saving…</p>}
+          {saving && <p className="text-xs text-gray-300">Saving…</p>}
         </div>
       )}
     </div>

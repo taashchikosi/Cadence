@@ -58,12 +58,12 @@ export default function FridayReminder({ onStartSession }) {
             </span>
           </div>
           <button onClick={dismiss}
-            className="text-gray-600 hover:text-gray-400 text-lg leading-none ml-4">
+            className="text-gray-400 hover:text-white text-lg leading-none ml-4">
             ×
           </button>
         </div>
         <p className="text-sm text-white mb-1">Time to close the week.</p>
-        <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+        <p className="text-xs text-gray-300 mb-4 leading-relaxed">
           Review this week's performance and set your priorities for next week.
         </p>
         <button onClick={handleStart} className="btn-gold w-full text-xs py-2">

@@ -37,7 +37,7 @@ export default function SignupPage({ onSwitch }) {
       {step === 1 ? (
         <>
           <h2 className="text-2xl font-semibold text-white mb-1">Create account</h2>
-          <p className="text-gray-500 text-sm mb-8">Start your operational review.</p>
+          <p className="text-gray-300 text-sm mb-8">Start your operational review.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label-xs block mb-1.5">Email</label>
@@ -51,7 +51,7 @@ export default function SignupPage({ onSwitch }) {
             </div>
             <button type="submit" className="btn-gold w-full mt-2">Continue</button>
           </form>
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-sm text-gray-300 mt-6">
             Have an account?{" "}
             <button onClick={onSwitch} className="text-gold hover:text-gold-light transition-colors">Sign in</button>
           </p>
@@ -59,7 +59,7 @@ export default function SignupPage({ onSwitch }) {
       ) : (
         <>
           <h2 className="text-xl font-semibold text-white mb-1">Calibration</h2>
-          <p className="text-gray-500 text-xs mb-6">This personalises your AI advisor from day one.</p>
+          <p className="text-gray-300 text-xs mb-6">This personalises your AI advisor from day one.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label-xs block mb-1.5">Role / Function</label>
@@ -89,7 +89,7 @@ export default function SignupPage({ onSwitch }) {
                     className={`flex-1 py-2 rounded text-sm border transition-colors ${
                       profile.voice_preference === v
                         ? "bg-dark-elevated border-gold text-gold"
-                        : "bg-dark-elevated border-dark-border text-gray-500 hover:border-gray-600"
+                        : "bg-dark-elevated border-dark-border text-gray-200 hover:border-gray-400"
                     }`}>
                     {v === "female" ? "Operational Clarity" : "Strategic Operator"}
                   </button>

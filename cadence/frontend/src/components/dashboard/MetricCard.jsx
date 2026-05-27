@@ -12,7 +12,7 @@ export default function MetricCard({ label, value, sub, dot, sparkData, inverted
         <span className={`text-2xl font-semibold ${dotColor(dot)}`}>{value ?? "—"}</span>
         {sparkData && <SparkLine data={sparkData} inverted={inverted} />}
       </div>
-      {sub && <span className="text-xs text-gray-600">{sub}</span>}
+      {sub && <span className="text-xs text-gray-300">{sub}</span>}
     </div>
   );
 }

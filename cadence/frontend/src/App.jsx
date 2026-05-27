@@ -63,7 +63,7 @@ export default function App() {
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                   tab === t.id
                     ? "bg-dark-elevated text-gold border border-gold-muted"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-dark-elevated"
+                    : "text-gray-300 hover:text-white hover:bg-dark-elevated"
                 }`}>
                 {t.label}
                 {t.id === "weekly" && <FridayDot />}

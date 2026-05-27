@@ -12,7 +12,7 @@ export default function VoiceButton({ onTranscript, disabled }) {
         className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
           listening
             ? "border-gold bg-gold-muted text-gold animate-pulse-gold"
-            : "border-dark-border bg-dark-elevated text-gray-500 hover:border-gold-muted hover:text-gray-300"
+            : "border-dark-border bg-dark-elevated text-gray-300 hover:border-gold-muted hover:text-white"
         } disabled:opacity-30`}
         title={listening ? "Stop recording" : "Speak"}
       >

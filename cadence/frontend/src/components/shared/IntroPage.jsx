@@ -35,7 +35,7 @@ export default function IntroPage({ onEnter }) {
         <p className="text-white text-base font-semibold tracking-wide">
           Your AI-powered weekly operating system.
         </p>
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <p className="text-gray-200 text-sm leading-relaxed">
           Plan your week with strategic precision. Track your execution daily. Review your performance with honest diagnosis — and close the gap between who you intend to be as a leader and how you actually show up.
         </p>
       </div>
@@ -45,9 +45,9 @@ export default function IntroPage({ onEnter }) {
 
       {/* Authors */}
       <div className="max-w-md text-center animate-fade-in" style={{ animationDelay: "500ms" }}>
-        <p className="text-gray-600 text-xs leading-relaxed">
+        <p className="text-gray-300 text-xs leading-relaxed">
           Grounded in the principles of the world's most respected thinkers on leadership and execution —{" "}
-          <span className="text-gray-400">Cal Newport, Greg McKeown, James Clear, Ray Dalio,</span> and more.
+          <span className="text-white">Cal Newport, Greg McKeown, James Clear, Ray Dalio,</span> and more.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default function IntroPage({ onEnter }) {
         >
           Enter Cadence
         </button>
-        <p className="text-center text-xs text-gray-700 mt-4">No account required</p>
+        <p className="text-center text-xs text-gray-400 mt-4">No account required</p>
       </div>
 
       {/* Bottom glow line */}

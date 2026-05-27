@@ -68,7 +68,7 @@ export default function UserSwitcher() {
           {activeUser.name}
         </span>
         <svg
-          className={`w-3 h-3 text-gray-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-3 h-3 text-gray-300 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -88,7 +88,7 @@ export default function UserSwitcher() {
         >
           <div
             className="px-3 py-2 border-b text-xs font-medium tracking-wide uppercase"
-            style={{ borderColor: "#2A2A2A", color: "#6B6B6B" }}
+            style={{ borderColor: "#2A2A2A", color: "#aaaaaa" }}
           >
             Demo Users
           </div>
@@ -123,7 +123,7 @@ export default function UserSwitcher() {
                   >
                     {user.name}
                   </div>
-                  <div className="text-xs truncate" style={{ color: "#6B6B6B" }}>
+                  <div className="text-xs truncate" style={{ color: "#aaaaaa" }}>
                     {user.role}
                   </div>
                 </div>
