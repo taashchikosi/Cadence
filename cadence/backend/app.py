@@ -237,14 +237,25 @@ def _save_extracted_data(user_id, session_type, week_start_date, data):
         INSERT INTO daily_logs
             (user_id, date, execution_score, friction_tag, deep_work_blocks, free_text)
         VALUES (%s, %s, %s, %s, %s, %s)
-        ON CONFLICT (user_id, date) DO UPDATE SET
-            execution_score  = EXCLUDED.execution_score,
-            friction_tag     = EXCLUDED.friction_tag,
-            deep_work_blocks = EXCLUDED.deep_work_blocks,
-            free_text        = EXCLUDED.free_text
+        ON CONFLICT DO NOTHING
         RETURNING id
     """, (user_id, week_start_date, exec_score, friction,
           hours_to_blocks(deep_hours), reflection))
+    if not log_row:
+        # Row already exists — update it then fetch the id
+        execute("""
+            UPDATE daily_logs SET
+                execution_score  = %s,
+                friction_tag     = %s,
+                deep_work_blocks = %s,
+                free_text        = %s
+            WHERE user_id = %s AND date = %s
+        """, (exec_score, friction, hours_to_blocks(deep_hours), reflection,
+              user_id, week_start_date))
+        log_row = execute(
+            "SELECT id FROM daily_logs WHERE user_id=%s AND date=%s",
+            (user_id, week_start_date)
+        )
     log_id = log_row["id"]
 
     # Replace tasks for this weekly log

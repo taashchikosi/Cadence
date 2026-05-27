@@ -476,6 +476,13 @@ def week_time_allocation(persona, exec_score):
     )
 
 
+def hours_to_blocks(h):
+    if h < 4:  return "0"
+    if h < 8:  return "1"
+    if h < 14: return "2"
+    return "3+"
+
+
 # ---------------------------------------------------------------------------
 # Main seed function
 # ---------------------------------------------------------------------------
@@ -576,25 +583,22 @@ def seed_all_users():
 
                 # ---- ONE weekly log entry (dated Monday) ----
                 reflection = random.choice(reflection_pool)
-                def hours_to_blocks(h):
-                    if h < 4:  return "0"
-                    if h < 8:  return "1"
-                    if h < 14: return "2"
-                    return "3+"
 
                 cur.execute("""
                     INSERT INTO daily_logs
                         (user_id, date, execution_score, friction_tag, deep_work_blocks, free_text)
                     VALUES (%s,%s,%s,%s,%s,%s)
-                    ON CONFLICT (user_id, date) DO UPDATE SET
-                        execution_score  = EXCLUDED.execution_score,
-                        friction_tag     = EXCLUDED.friction_tag,
-                        deep_work_blocks = EXCLUDED.deep_work_blocks,
-                        free_text        = EXCLUDED.free_text
+                    ON CONFLICT DO NOTHING
                     RETURNING id
                 """, (uid, monday.isoformat(), exec_score, friction,
                       hours_to_blocks(deep_hours), reflection))
                 log_row = cur.fetchone()
+                if not log_row:
+                    cur.execute(
+                        "SELECT id FROM daily_logs WHERE user_id=%s AND date=%s",
+                        (uid, monday.isoformat())
+                    )
+                    log_row = cur.fetchone()
                 if not log_row:
                     continue
                 log_id = log_row["id"]
