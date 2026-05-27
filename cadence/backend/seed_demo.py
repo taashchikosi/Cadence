@@ -534,7 +534,27 @@ def seed_all_users():
         """, profile_rows, template="(%s::uuid,%s,%s,%s,%s)")
 
         # ------------------------------------------------------------------
-        # 3. Compute 4 Mondays (4 weeks back through most recent), oldest first
+        # 3. Wipe existing demo data so re-seeding always produces exactly
+        #    4 clean weeks (no leftover rows from previous runs).
+        # ------------------------------------------------------------------
+        demo_ids = [u["id"] for u in DEMO_USERS]
+        id_list  = [psycopg2.extensions.adapt(i).getquoted().decode() for i in demo_ids]
+        ids_sql  = ", ".join(f"'{i}'" for i in demo_ids)
+
+        cur.execute(f"DELETE FROM weekly_metrics        WHERE user_id IN ({ids_sql})")
+        cur.execute(f"DELETE FROM ai_reviews            WHERE user_id IN ({ids_sql})")
+        cur.execute(f"DELETE FROM weekly_friday_reviews WHERE user_id IN ({ids_sql})")
+        cur.execute(f"DELETE FROM weekly_monday_inputs  WHERE user_id IN ({ids_sql})")
+        # tasks FK → daily_logs; delete tasks first
+        cur.execute(f"""
+            DELETE FROM tasks USING daily_logs
+            WHERE tasks.daily_log_id = daily_logs.id
+              AND daily_logs.user_id IN ({ids_sql})
+        """)
+        cur.execute(f"DELETE FROM daily_logs WHERE user_id IN ({ids_sql})")
+
+        # ------------------------------------------------------------------
+        # 4. Compute 4 Mondays (4 weeks back through most recent), oldest first
         # ------------------------------------------------------------------
         today = date.today()
         days_since_monday = today.weekday()
