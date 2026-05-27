@@ -368,29 +368,20 @@ def get_dashboard():
     metrics = calculate_all_metrics(g.user_id, week_start)
     history = get_multi_week_metrics(g.user_id, weeks=weeks, from_date=week_start)
 
-    # Enrich history with deep_work_hours from weekly_friday_reviews
+    # Enrich history with deep_work_hours from weekly_friday_reviews.
+    # week_start_date in history is already ISO string (normalised in get_multi_week_metrics).
     if history:
-        wsd_list = [str(r.get('week_start_date', '')) for r in history]
+        wsd_list = [r['week_start_date'] for r in history if r.get('week_start_date')]
         friday_rows = query(
             "SELECT week_start_date, deep_work_hours FROM weekly_friday_reviews "
             "WHERE user_id=%s AND week_start_date = ANY(%s::date[])",
             (g.user_id, wsd_list)
         ) or []
-        friday_map = {str(r['week_start_date']): r.get('deep_work_hours') for r in friday_rows}
+        # Normalise friday_map keys to ISO strings
+        friday_map = {str(r['week_start_date'])[:10]: float(r['deep_work_hours'])
+                      for r in friday_rows if r.get('deep_work_hours') is not None}
         for row in history:
-            row['deep_work_hours'] = friday_map.get(str(row.get('week_start_date', '')))
-
-    logs = query(
-        "SELECT * FROM daily_logs WHERE user_id=%s ORDER BY date DESC LIMIT 7",
-        (g.user_id,)
-    )
-    logs_with_tasks = []
-    for r in logs:
-        log = dict(r)
-        tasks = query("SELECT * FROM tasks WHERE daily_log_id=%s", (log["id"],))
-        log["tasks"] = [dict(t) for t in tasks]
-        log["id"] = str(log["id"])
-        logs_with_tasks.append(log)
+            row['deep_work_hours'] = friday_map.get(row.get('week_start_date', ''))
 
     # Fetch the review for the specific week being viewed, falling back to the most recent
     latest_review = query(
@@ -406,11 +397,21 @@ def get_dashboard():
 
     profile = get_user_profile(g.user_id)
 
+    def _serial(row):
+        """Convert a DB row dict to JSON-safe: dates → ISO strings, UUIDs → str."""
+        out = {}
+        for k, v in row.items():
+            if hasattr(v, 'isoformat'):
+                out[k] = v.isoformat()[:10] if hasattr(v, 'year') and not hasattr(v, 'hour') \
+                          else v.isoformat()
+            else:
+                out[k] = str(v) if hasattr(v, 'hex') else v  # UUID → str
+        return out
+
     return jsonify({
         "metrics": metrics,
         "metrics_history": history,
-        "recent_logs": logs_with_tasks,
-        "latest_review": dict(latest_review) if latest_review else None,
+        "latest_review": _serial(dict(latest_review)) if latest_review else None,
         "profile": dict(profile) if profile else None,
         "week_start_date": week_start,
     })

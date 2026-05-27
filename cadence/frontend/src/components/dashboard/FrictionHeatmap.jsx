@@ -8,11 +8,14 @@ const ALL_FRICTIONS = [
   { key: "unclear_priorities", label: "Unclear Priorities" },
 ];
 
-function weekLabel(dateStr) {
-  const raw = dateStr ? String(dateStr).slice(0, 10) : null;
-  if (!raw) return "—";
-  const d = new Date(raw + "T12:00:00");
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+function weekLabel(val) {
+  if (!val) return "—";
+  const s = String(val);
+  const m = s.match(/(\d{4}-\d{2}-\d{2})/);
+  const iso = m ? m[1] : null;
+  if (!iso) return s.slice(0, 6);
+  const d = new Date(iso + "T12:00:00");
+  return isNaN(d) ? iso.slice(5) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 function heatStyle(isPrimary, freq) {

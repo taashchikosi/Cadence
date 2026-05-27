@@ -225,6 +225,11 @@ def calculate_all_metrics(user_id, week_start_date):
     return metrics
 
 
+def _iso(v):
+    """Return YYYY-MM-DD string regardless of whether v is a date, datetime, or string."""
+    return str(v)[:10] if v else None
+
+
 def get_multi_week_metrics(user_id, weeks=8, from_date=None):
     if from_date:
         rows = query(
@@ -238,7 +243,16 @@ def get_multi_week_metrics(user_id, weeks=8, from_date=None):
             "ORDER BY week_start_date DESC LIMIT %s",
             (user_id, weeks)
         )
-    return [dict(r) for r in rows] if rows else []
+    if not rows:
+        return []
+    result = []
+    for r in rows:
+        row = dict(r)
+        # Always return week_start_date as "YYYY-MM-DD" — Flask 2.2+ serialises
+        # datetime.date as RFC 2822 which breaks JS date parsing on the frontend.
+        row['week_start_date'] = _iso(row.get('week_start_date'))
+        result.append(row)
+    return result
 
 
 def psycopg2_json(val):

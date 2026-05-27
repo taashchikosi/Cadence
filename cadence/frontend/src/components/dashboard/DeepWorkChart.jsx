@@ -5,6 +5,16 @@ import {
 
 const TEAL = "#06B6D4";
 
+function toWeekLabel(val) {
+  if (!val) return "—";
+  const s = String(val);
+  const m = s.match(/(\d{4}-\d{2}-\d{2})/);
+  const iso = m ? m[1] : null;
+  if (!iso) return s.slice(0, 6);
+  const d = new Date(iso + "T12:00:00");
+  return isNaN(d) ? iso.slice(5) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
@@ -26,12 +36,8 @@ export default function DeepWorkChart({ history = [] }) {
   );
 
   const data = [...history].reverse().map(w => {
-    const raw = w.week_start_date ? String(w.week_start_date).slice(0, 10) : null;
-    const label = raw
-      ? new Date(raw + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-      : "—";
     return {
-      week:  label,
+      week:  toWeekLabel(w.week_start_date),
       hours: w.deep_work_hours != null ? +parseFloat(w.deep_work_hours).toFixed(1) : null,
     };
   });

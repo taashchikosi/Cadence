@@ -534,13 +534,12 @@ def seed_all_users():
         """, profile_rows, template="(%s::uuid,%s,%s,%s,%s)")
 
         # ------------------------------------------------------------------
-        # 3. Compute 4 Mondays going back from today
+        # 3. Compute 4 Mondays (4 weeks back through most recent), oldest first
         # ------------------------------------------------------------------
         today = date.today()
         days_since_monday = today.weekday()
         current_monday = today - timedelta(days=days_since_monday)
-        # 4 weeks (1 month), most recent week last
-        mondays = [current_monday - timedelta(weeks=(7 - i)) for i in range(8)]
+        mondays = [current_monday - timedelta(weeks=(3 - i)) for i in range(4)]
 
         total_weekly_logs = 0
         total_tasks       = 0

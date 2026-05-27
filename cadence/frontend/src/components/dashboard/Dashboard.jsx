@@ -48,7 +48,7 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const d = await api.getDashboard(weekStart, 8);
+      const d = await api.getDashboard(weekStart, 4);
       setData(d);
     } catch (e) {
       setError(e.message);
