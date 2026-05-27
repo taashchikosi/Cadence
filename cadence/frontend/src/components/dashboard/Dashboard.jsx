@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../../api/client";
 import PerformanceChart from "./PerformanceChart";
+import DeepWorkChart from "./DeepWorkChart";
+import FrictionHeatmap from "./FrictionHeatmap";
 import AIReviewPanel from "./AIReviewPanel";
 
 const pct = v => v != null ? `${Math.round(v * 100)}%` : "—";
@@ -40,12 +42,13 @@ export default function Dashboard() {
   const [error,      setError]      = useState(null);
 
   const currentMonday = getCurrentMonday();
+  const isCurrentWeek = weekStart >= currentMonday;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const d = await api.getDashboard(weekStart, 6);
+      const d = await api.getDashboard(weekStart, 8);
       setData(d);
     } catch (e) {
       setError(e.message);
@@ -77,7 +80,9 @@ export default function Dashboard() {
   const fpi     = m.friction_pattern_index || {};
   const dots    = m.action_dots || {};
 
-  const isCurrentWeek = weekStart >= currentMonday;
+  const priorityCount = m.priority_completion_rate != null
+    ? `${Math.round(m.priority_completion_rate * 5)}/5`
+    : "—";
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -91,16 +96,14 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setWeekStart(s => shiftWeek(s, -7))}
+          <button onClick={() => setWeekStart(s => shiftWeek(s, -7))}
             className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white">
             ← Prev
           </button>
           <span className="text-sm font-medium text-gold px-2 min-w-[11rem] text-center">
             {formatWeek(weekStart)}
           </span>
-          <button
-            onClick={() => !isCurrentWeek && setWeekStart(s => shiftWeek(s, 7))}
+          <button onClick={() => !isCurrentWeek && setWeekStart(s => shiftWeek(s, 7))}
             disabled={isCurrentWeek}
             className="btn-ghost text-sm px-3 py-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
             Next →
@@ -120,7 +123,8 @@ export default function Dashboard() {
         />
         <MetricCard
           label="Priority Completion"
-          value={pct(m.priority_completion_rate)}
+          value={priorityCount}
+          sub={m.priority_completion_rate != null ? pct(m.priority_completion_rate) + " complete" : "No review yet"}
           dot={dots.priority_completion_rate}
         />
         <MetricCard
@@ -146,31 +150,51 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Performance trend chart */}
-      {history.length > 0 && (
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Performance Trend</p>
-            <div className="flex gap-4">
-              {[
-                { color: "#D4A520",   label: "Execution Score" },
-                { color: "#D4A52055", label: "Priority Completion" },
-                { color: "#ef4444",   label: "Deferral Rate" },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <span className="w-5 h-0.5 rounded inline-block" style={{ background: color }} />
-                  <span className="text-xs text-gray-600">{label}</span>
-                </div>
-              ))}
-            </div>
+      {/* Performance trend — 3 lines as % */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Performance Trend</p>
+          <div className="flex gap-4">
+            {[
+              { color: "#D4A520", label: "Execution Score", dash: false },
+              { color: "#2dd4bf", label: "Planning Accuracy", dash: true },
+              { color: "#ef4444", label: "Deferral Rate",     dash: true },
+            ].map(({ color, label, dash }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className="w-5 h-0.5 rounded inline-block"
+                  style={{ background: color, opacity: dash ? 0.7 : 1 }} />
+                <span className="text-xs text-gray-600">{label}</span>
+              </div>
+            ))}
           </div>
-          <PerformanceChart history={history} />
         </div>
-      )}
+        <PerformanceChart history={history} />
+      </div>
+
+      {/* Deep Work + Friction Heatmap side-by-side */}
+      <div className="grid grid-cols-2 gap-4">
+
+        <div className="card p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            Deep Work Hours / Week
+          </p>
+          <DeepWorkChart history={history} />
+        </div>
+
+        <div className="card p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            Friction Heatmap
+          </p>
+          <FrictionHeatmap history={history} />
+        </div>
+
+      </div>
 
       {/* AI Diagnostic Review */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">AI Diagnostic Review</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          AI Diagnostic Review
+        </p>
         <AIReviewPanel
           review={data.latest_review}
           onGenerate={handleGenerateReview}
@@ -217,6 +241,10 @@ function LoadingState() {
         ))}
       </div>
       <div className="h-64 bg-dark-elevated rounded-lg border border-dark-border" />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="h-48 bg-dark-elevated rounded-lg border border-dark-border" />
+        <div className="h-48 bg-dark-elevated rounded-lg border border-dark-border" />
+      </div>
     </div>
   );
 }

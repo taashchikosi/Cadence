@@ -1,12 +1,11 @@
 import {
-  ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis,
   Tooltip, CartesianGrid, ReferenceLine,
 } from "recharts";
 
-const GOLD      = "#D4A520";
-const GOLD_AREA = "#D4A52022";
-const GOLD_DIM  = "#D4A52066";
-const RED       = "#ef4444";
+const GOLD = "#D4A520";
+const RED  = "#ef4444";
+const TEAL = "#2dd4bf";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -17,7 +16,7 @@ function CustomTooltip({ active, payload, label }) {
         <div key={i} className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
           <span className="text-gray-400">{p.name}:</span>
-          <span className="text-white font-medium">{typeof p.value === "number" ? p.value.toFixed(1) : p.value}</span>
+          <span className="text-white font-medium">{p.value.toFixed(1)}%</span>
         </div>
       ))}
     </div>
@@ -32,39 +31,31 @@ export default function PerformanceChart({ history = [] }) {
   );
 
   const data = [...history].reverse().map(w => ({
-    week:    w.week_start_date ? w.week_start_date.slice(5) : "—",
-    score:   w.avg_execution_score != null ? +w.avg_execution_score.toFixed(2) : null,
-    pcr:     w.priority_completion_rate != null ? +(w.priority_completion_rate * 10).toFixed(2) : null,
-    deferral:w.deferral_rate != null ? +(w.deferral_rate * 10).toFixed(2) : null,
+    week:     w.week_start_date ? w.week_start_date.slice(5) : "—",
+    score:    w.avg_execution_score != null ? +(w.avg_execution_score    * 10).toFixed(1)  : null,
+    planning: w.planning_accuracy  != null ? +(w.planning_accuracy      * 100).toFixed(1) : null,
+    deferral: w.deferral_rate      != null ? +(w.deferral_rate          * 100).toFixed(1) : null,
   }));
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-        <defs>
-          <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor={GOLD} stopOpacity={0.15} />
-            <stop offset="95%" stopColor={GOLD} stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="pcrGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor={GOLD_DIM} stopOpacity={0.2} />
-            <stop offset="95%" stopColor={GOLD_DIM} stopOpacity={0} />
-          </linearGradient>
-        </defs>
+      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
         <XAxis dataKey="week" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false}
-          interval={data.length > 13 ? Math.floor(data.length / 8) : 0} />
+          interval={data.length > 6 ? 1 : 0} />
         <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false}
-          domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} />
+          domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `${v}%`} />
         <Tooltip content={<CustomTooltip />} />
-        <ReferenceLine y={8} stroke={GOLD} strokeOpacity={0.12} strokeDasharray="4 4" />
-        <ReferenceLine y={6} stroke="#555"  strokeOpacity={0.15} strokeDasharray="4 4" />
+        <ReferenceLine y={80} stroke={GOLD} strokeOpacity={0.12} strokeDasharray="4 4" />
+        <ReferenceLine y={50} stroke="#333"  strokeOpacity={0.3}  strokeDasharray="4 4" />
 
-        <Area dataKey="pcr"     name="Priority Completion" fill="url(#pcrGrad)"   stroke={GOLD_DIM} strokeWidth={1.5} type="monotone" dot={false} />
-        <Area dataKey="score"   name="Execution Score"     fill="url(#scoreGrad)" stroke={GOLD}     strokeWidth={2.5} type="monotone"
+        <Line dataKey="score"    name="Execution Score"   stroke={GOLD} strokeWidth={2.5} type="monotone"
           dot={{ fill: GOLD, r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: GOLD }} />
-        <Line dataKey="deferral" name="Deferral Rate"      stroke={RED}     strokeWidth={1.5} type="monotone" dot={false} strokeDasharray="4 3" />
-      </ComposedChart>
+        <Line dataKey="planning" name="Planning Accuracy" stroke={TEAL} strokeWidth={1.5} type="monotone"
+          dot={false} strokeDasharray="6 3" />
+        <Line dataKey="deferral" name="Deferral Rate"     stroke={RED}  strokeWidth={1.5} type="monotone"
+          dot={false} strokeDasharray="4 3" />
+      </LineChart>
     </ResponsiveContainer>
   );
 }

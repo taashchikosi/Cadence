@@ -215,12 +215,19 @@ def calculate_all_metrics(user_id, week_start_date):
     return metrics
 
 
-def get_multi_week_metrics(user_id, weeks=8):
-    rows = query(
-        "SELECT * FROM weekly_metrics WHERE user_id=%s "
-        "ORDER BY week_start_date DESC LIMIT %s",
-        (user_id, weeks)
-    )
+def get_multi_week_metrics(user_id, weeks=8, from_date=None):
+    if from_date:
+        rows = query(
+            "SELECT * FROM weekly_metrics WHERE user_id=%s AND week_start_date <= %s "
+            "ORDER BY week_start_date DESC LIMIT %s",
+            (user_id, from_date, weeks)
+        )
+    else:
+        rows = query(
+            "SELECT * FROM weekly_metrics WHERE user_id=%s "
+            "ORDER BY week_start_date DESC LIMIT %s",
+            (user_id, weeks)
+        )
     return [dict(r) for r in rows] if rows else []
 
 

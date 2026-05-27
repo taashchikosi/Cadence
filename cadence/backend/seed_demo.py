@@ -543,7 +543,7 @@ def seed_all_users():
         days_since_monday = today.weekday()
         current_monday = today - timedelta(days=days_since_monday)
         # 4 weeks (1 month), most recent week last
-        mondays = [current_monday - timedelta(weeks=(3 - i)) for i in range(4)]
+        mondays = [current_monday - timedelta(weeks=(7 - i)) for i in range(8)]
 
         total_daily_logs = 0
         total_tasks = 0

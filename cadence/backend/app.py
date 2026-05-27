@@ -335,7 +335,19 @@ def get_dashboard():
     week_start = request.args.get("week_start_date", current_week_start())
     weeks = min(int(request.args.get("weeks", 8)), 26)
     metrics = calculate_all_metrics(g.user_id, week_start)
-    history = get_multi_week_metrics(g.user_id, weeks=weeks)
+    history = get_multi_week_metrics(g.user_id, weeks=weeks, from_date=week_start)
+
+    # Enrich history with deep_work_hours from weekly_friday_reviews
+    if history:
+        wsd_list = [str(r.get('week_start_date', '')) for r in history]
+        friday_rows = query(
+            "SELECT week_start_date, deep_work_hours FROM weekly_friday_reviews "
+            "WHERE user_id=%s AND week_start_date = ANY(%s::date[])",
+            (g.user_id, wsd_list)
+        ) or []
+        friday_map = {str(r['week_start_date']): r.get('deep_work_hours') for r in friday_rows}
+        for row in history:
+            row['deep_work_hours'] = friday_map.get(str(row.get('week_start_date', '')))
 
     logs = query(
         "SELECT * FROM daily_logs WHERE user_id=%s ORDER BY date DESC LIMIT 7",
