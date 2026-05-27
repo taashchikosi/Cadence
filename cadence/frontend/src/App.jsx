@@ -93,7 +93,7 @@ export default function App() {
           </div>
         )}
 
-        {tab === "report" && <ReportTab weekStart={weekStart} />}
+        {tab === "report" && <ReportTab />}
       </main>
 
       <FridayReminder onStartSession={() => setTab("weekly")} />

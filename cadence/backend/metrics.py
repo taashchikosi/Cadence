@@ -39,32 +39,28 @@ def week_dates(week_start_date):
 
 def calculate_priority_completion_rate(user_id, week_start_date):
     row = query(
-        "SELECT priority_1_status, priority_2_status, priority_3_status, "
-        "priority_4_status, priority_5_status FROM weekly_friday_reviews "
-        "WHERE user_id=%s AND week_start_date=%s",
+        "SELECT priority_1_status, priority_2_status, priority_3_status "
+        "FROM weekly_friday_reviews WHERE user_id=%s AND week_start_date=%s",
         (user_id, week_start_date), one=True
     )
     if not row:
         return None
     statuses = [row[k] for k in
-                ["priority_1_status", "priority_2_status", "priority_3_status",
-                 "priority_4_status", "priority_5_status"] if row[k]]
+                ["priority_1_status", "priority_2_status", "priority_3_status"] if row[k]]
     if not statuses:
         return None
     return round(sum(1 for s in statuses if s == "done") / len(statuses), 3)
 
 
 def calculate_deep_work_frequency(user_id, week_start_date):
-    dates = week_dates(week_start_date)
-    rows = query(
-        "SELECT deep_work_blocks FROM daily_logs WHERE user_id=%s AND date = ANY(%s::date[])",
-        (user_id, dates)
+    row = query(
+        "SELECT deep_work_hours FROM weekly_friday_reviews "
+        "WHERE user_id=%s AND week_start_date=%s",
+        (user_id, week_start_date), one=True
     )
-    if not rows:
+    if not row or row["deep_work_hours"] is None:
         return None
-    def to_num(v):
-        return 3 if v == "3+" else int(v or 0)
-    return round(sum(to_num(r["deep_work_blocks"]) for r in rows) / len(rows), 2)
+    return float(row["deep_work_hours"])
 
 
 def calculate_friction_pattern_index(user_id, week_start_date):
@@ -112,14 +108,28 @@ def calculate_execution_score_trend(user_id, week_start_date):
 
 def calculate_deferral_rate(user_id, week_start_date):
     dates = week_dates(week_start_date)
-    rows = query(
+    task_rows = query(
         "SELECT t.status FROM tasks t JOIN daily_logs dl ON t.daily_log_id=dl.id "
         "WHERE t.user_id=%s AND dl.date = ANY(%s::date[])",
         (user_id, dates)
+    ) or []
+
+    priority_row = query(
+        "SELECT priority_1_status, priority_2_status, priority_3_status "
+        "FROM weekly_friday_reviews WHERE user_id=%s AND week_start_date=%s",
+        (user_id, week_start_date), one=True
     )
-    if not rows:
-        return None
-    return round(sum(1 for r in rows if r["status"] == "deferred") / len(rows), 3)
+
+    total    = len(task_rows)
+    deferred = sum(1 for r in task_rows if r["status"] == "deferred")
+
+    if priority_row:
+        p_statuses = [priority_row.get(f"priority_{i}_status") for i in range(1, 4)]
+        p_statuses = [s for s in p_statuses if s]
+        total    += len(p_statuses)
+        deferred += sum(1 for s in p_statuses if s == "deferred")
+
+    return round(deferred / total, 3) if total > 0 else None
 
 
 def calculate_planning_accuracy(user_id, week_start_date):

@@ -32,30 +32,28 @@ AVOID: motivational speaker energy, aggressive authority, startup language, exce
 You make the user feel: calm, focused, strategically aware, and operationally capable."""
 
 WEEKLY_CONTEXT = """
-You are conducting a combined Friday afternoon review and planning session. This is the most important operational conversation of the week.
+You are conducting a weekly operational review and planning session. This is the most important conversation of the week.
 
-You will run this in two parts — complete Part 1 fully before moving to Part 2.
+Complete PART 1 fully before moving to PART 2. Ask one question at a time. Press for specificity.
 
-PART 1 — WEEK REVIEW:
-Collect the following, one area at a time:
-1. Outcome of each stated priority this week (done / partial / deferred / dropped) with a brief honest explanation
-2. Time allocation across: deep work, admin, meetings, reactive work, learning, low-leverage tasks (in hours)
-3. Execution score (1–10) — operational execution quality, not how they feel about the week
-4. A candid reflection: what single factor most determined this week's outcome?
+PART 1 — THIS WEEK'S REVIEW (collect in this order):
+1. Their 3 top priorities this week — for each one: outcome (done / partial / deferred) and the honest reason why
+2. Their 10 key tasks this week — ask them to list all tasks they worked on, then get a status for each (done / partial / deferred). Make sure you collect exactly 10 tasks with statuses.
+3. Execution score 1–10: operational quality of the week, not how they feel about it
+4. Deep work: how many hours of focused, uninterrupted work did they actually get this week?
+5. Primary friction: what was the single biggest source of interruption or lost time?
+   (Pin them to one of: meetings / context_switching / admin / overcommitment / decision_avoidance / reactive_work / unclear_priorities)
+6. Reflection: what single factor most determined this week's outcome?
 
-PART 2 — NEXT WEEK PLANNING:
-Transition naturally. Collect:
-1. Top 3–5 priorities for next week — specific, outcome-oriented commitments (not activities)
-2. Estimated deep work hours available
-3. Predicted main derailers
+PART 2 — NEXT WEEK'S PLAN:
+7. Top 3 priorities for next week — specific outcome-oriented commitments, not activities
+8. How many hours of deep work can they realistically protect next week?
 
 Rules:
-- Ask one thing at a time
-- Probe for specificity when answers are vague or generic
-- Do not soften findings or offer reassurance
-- Once BOTH parts are complete, give a clean summary and ask for confirmation
-- When the user confirms, output EXACTLY this on a new line:
-EXTRACTED:{"review":{"priority_outcomes":{"p1":"done","p2":"partial","p3":"deferred"},"time_allocation":{"deep_work":0,"admin":0,"meetings":0,"reactive":0,"learning":0,"low_leverage":0},"execution_score":0,"reflection":"..."},"planning":{"priorities":["...","..."],"deep_work_hours":0,"derailers":["..."]}}
+- Do not soften. Do not reassure. Do not add motivational language.
+- When BOTH parts are complete, give a 2-sentence summary and ask for confirmation.
+- When confirmed, output EXACTLY this block (fill in all values, keep all 10 tasks):
+EXTRACTED:{"review":{"execution_score":0,"priorities":[{"description":"...","status":"done"},{"description":"...","status":"partial"},{"description":"...","status":"deferred"}],"tasks":[{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"},{"description":"...","status":"done"}],"deep_work_hours":0,"friction_tag":"meetings","reflection":"..."},"planning":{"priorities":["...","...","..."],"deep_work_hours":0}}
 """
 
 
@@ -138,16 +136,17 @@ def opening_message(voice, session_type, user_profile, recent_context=""):
 
 def _mock_response(session_type, message_count):
     responses = [
-        "It's Friday. Let's close this week and set the next one. Walk me through priority one — what was the outcome and what drove it?",
-        "Understood. And priority two?",
-        "How did you allocate your time this week? Give me hours across: deep work, meetings, admin, reactive work, learning, and low-leverage tasks.",
+        "It's Friday. Let's close this week properly. Walk me through priority one — what was the outcome and what drove it?",
+        "Got it. Priority two?",
+        "And priority three?",
+        "Now let's go through your tasks. List the 10 key things you worked on this week — I'll take a status on each.",
         "Execution score for the week — 1 to 10. Operational quality, not how you feel about it.",
+        "How many hours of focused, uninterrupted deep work did you actually get this week?",
+        "What was the single biggest source of interruption or lost time — meetings, context switching, admin, overcommitment, decision avoidance, reactive work, or unclear priorities?",
         "What single factor most determined this week's outcome?",
-        "Good. Now next week. What are the 3–5 priorities you're committing to? Specific outcomes, not activities.",
-        "What's priority two?",
-        "How many hours of protected deep work do you realistically have available?",
-        "What's most likely to derail completion?",
-        "Here's what I have. Shall I lock in the review and next week's plan?\n\nEXTRACTED:{\"review\":{\"priority_outcomes\":{\"p1\":\"done\",\"p2\":\"partial\",\"p3\":\"deferred\"},\"time_allocation\":{\"deep_work\":8,\"admin\":4,\"meetings\":10,\"reactive\":8,\"learning\":2,\"low_leverage\":3},\"execution_score\":6,\"reflection\":\"Meetings consumed the week.\"},\"planning\":{\"priorities\":[\"Close Series A lead\",\"Finalise pricing model\",\"Hire VP Eng\"],\"deep_work_hours\":12,\"derailers\":[\"meetings\"]}}",
+        "Next week. Three priorities — specific, outcome-oriented commitments. What's first?",
+        "How many hours of deep work can you realistically protect next week?",
+        "Here's what I have. Two priorities done, one deferred. Eight tasks done, two deferred. Execution at 7. Deep work short at 8 hours. Meetings as the primary friction. Confirm?\n\nEXTRACTED:{\"review\":{\"execution_score\":7,\"priorities\":[{\"description\":\"Close Series A lead investor\",\"status\":\"done\"},{\"description\":\"Finalise product roadmap for Q3\",\"status\":\"done\"},{\"description\":\"Hire VP Engineering\",\"status\":\"deferred\"}],\"tasks\":[{\"description\":\"Investor deck revision\",\"status\":\"done\"},{\"description\":\"Partner intro calls x3\",\"status\":\"done\"},{\"description\":\"Q3 roadmap workshop\",\"status\":\"done\"},{\"description\":\"Engineering interviews\",\"status\":\"deferred\"},{\"description\":\"Board update memo\",\"status\":\"done\"},{\"description\":\"Pricing model review\",\"status\":\"done\"},{\"description\":\"GTM strategy draft\",\"status\":\"done\"},{\"description\":\"1:1s with direct reports\",\"status\":\"done\"},{\"description\":\"OKR calibration\",\"status\":\"partial\"},{\"description\":\"Competitor analysis\",\"status\":\"deferred\"}],\"deep_work_hours\":8,\"friction_tag\":\"meetings\",\"reflection\":\"Investor process consumed protected morning blocks.\"},\"planning\":{\"priorities\":[\"Close VP Eng hire\",\"Finalise Series A term sheet\",\"Ship roadmap to team\"],\"deep_work_hours\":12}}",
     ]
     idx = min(message_count // 2, len(responses) - 1)
     return responses[idx]

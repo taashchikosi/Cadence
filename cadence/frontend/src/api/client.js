@@ -50,6 +50,11 @@ export const api = {
   generateReview: (d) => req("/api/reviews/generate", { method: "POST", body: JSON.stringify(d) }),
   getReviews:     () => req("/api/reviews"),
 
+  getCoachReport: (weekStart) => req("/api/report/coach", {
+    method: "POST",
+    body: JSON.stringify({ week_start_date: weekStart }),
+  }),
+
   tts: (text) => req("/api/tts", { method: "POST", body: JSON.stringify({ text }) }),
 
   health: () => req("/api/health"),

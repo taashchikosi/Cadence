@@ -13,7 +13,8 @@ from llm_service import generate_weekly_review
 from conversation_service import chat, extract_data, opening_message
 from tts_service import synthesize
 from pdf_service import generate_pdf
-from rag_service import ingest_knowledge_base, has_knowledge_base
+from rag_service import ingest_knowledge_base, has_knowledge_base, retrieve_relevant_chunks, format_rag_context
+from report_service import generate_coach_report
 from seed_demo import seed_all_users
 
 app = Flask(__name__)
@@ -216,67 +217,86 @@ def send_message():
 
 
 def _save_extracted_data(user_id, session_type, week_start_date, data):
-    # Combined weekly session — saves both review (current week) and planning (next week)
-    review_data   = data.get("review", data)   # fallback: treat whole data as review
+    review_data   = data.get("review", data)
     planning_data = data.get("planning", {})
 
-    outcomes = review_data.get("priority_outcomes", {})
-    ta       = review_data.get("time_allocation", {})
+    exec_score  = review_data.get("execution_score")
+    friction    = review_data.get("friction_tag")
+    deep_hours  = review_data.get("deep_work_hours") or 0
+    reflection  = review_data.get("reflection", "")
 
-    # Save Friday review for current week
+    def hours_to_blocks(h):
+        h = h or 0
+        if h < 4:  return "0"
+        if h < 8:  return "1"
+        if h < 14: return "2"
+        return "3+"
+
+    # One weekly log entry per week (dated Monday)
+    log_row = execute("""
+        INSERT INTO daily_logs
+            (user_id, date, execution_score, friction_tag, deep_work_blocks, free_text)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        ON CONFLICT (user_id, date) DO UPDATE SET
+            execution_score  = EXCLUDED.execution_score,
+            friction_tag     = EXCLUDED.friction_tag,
+            deep_work_blocks = EXCLUDED.deep_work_blocks,
+            free_text        = EXCLUDED.free_text
+        RETURNING id
+    """, (user_id, week_start_date, exec_score, friction,
+          hours_to_blocks(deep_hours), reflection))
+    log_id = log_row["id"]
+
+    # Replace tasks for this weekly log
+    execute("DELETE FROM tasks WHERE daily_log_id = %s", (log_id,))
+    for task in review_data.get("tasks", []):
+        desc = (task.get("description") or "").strip()
+        if desc:
+            execute("""
+                INSERT INTO tasks (daily_log_id, user_id, description, status, is_planned)
+                VALUES (%s, %s, %s, %s, TRUE)
+            """, (log_id, user_id, desc[:200], task.get("status", "done")))
+
+    # Save 3 priority outcomes + deep work hours
+    priorities = review_data.get("priorities", [])
+    p_statuses = [p.get("status") for p in priorities]
+    p1, p2, p3 = (p_statuses + [None, None, None])[:3]
+
     execute("""
         INSERT INTO weekly_friday_reviews
-            (user_id, week_start_date, priority_1_status, priority_2_status,
-             priority_3_status, deep_work_hours, admin_hours, meetings_hours,
-             reactive_work_hours, learning_hours, low_leverage_hours,
-             weekly_execution_score, reflection_text)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            (user_id, week_start_date,
+             priority_1_status, priority_2_status, priority_3_status,
+             deep_work_hours, weekly_execution_score, reflection_text)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (user_id, week_start_date) DO UPDATE SET
-            priority_1_status=EXCLUDED.priority_1_status,
-            priority_2_status=EXCLUDED.priority_2_status,
-            priority_3_status=EXCLUDED.priority_3_status,
-            deep_work_hours=EXCLUDED.deep_work_hours,
-            admin_hours=EXCLUDED.admin_hours,
-            meetings_hours=EXCLUDED.meetings_hours,
-            reactive_work_hours=EXCLUDED.reactive_work_hours,
-            learning_hours=EXCLUDED.learning_hours,
-            low_leverage_hours=EXCLUDED.low_leverage_hours,
-            weekly_execution_score=EXCLUDED.weekly_execution_score,
-            reflection_text=EXCLUDED.reflection_text
-    """, (
-        user_id, week_start_date,
-        outcomes.get("p1"), outcomes.get("p2"), outcomes.get("p3"),
-        ta.get("deep_work", 0), ta.get("admin", 0), ta.get("meetings", 0),
-        ta.get("reactive", 0), ta.get("learning", 0), ta.get("low_leverage", 0),
-        review_data.get("execution_score"),
-        review_data.get("reflection"),
-    ))
+            priority_1_status      = EXCLUDED.priority_1_status,
+            priority_2_status      = EXCLUDED.priority_2_status,
+            priority_3_status      = EXCLUDED.priority_3_status,
+            deep_work_hours        = EXCLUDED.deep_work_hours,
+            weekly_execution_score = EXCLUDED.weekly_execution_score,
+            reflection_text        = EXCLUDED.reflection_text
+    """, (user_id, week_start_date, p1, p2, p3, deep_hours, exec_score, reflection))
 
-    # Save Monday planning for NEXT week
+    # Save next week's planning
     if planning_data:
-        from datetime import date, timedelta
         next_week = (date.fromisoformat(str(week_start_date)) + timedelta(days=7)).isoformat()
-        priorities = planning_data.get("priorities", [])
+        next_pri = planning_data.get("priorities", [])
         execute("""
             INSERT INTO weekly_monday_inputs
                 (user_id, week_start_date, priority_1, priority_2, priority_3,
-                 priority_4, priority_5, estimated_deep_work_hours, predicted_main_derailer)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 estimated_deep_work_hours)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (user_id, week_start_date) DO UPDATE SET
-                priority_1=EXCLUDED.priority_1, priority_2=EXCLUDED.priority_2,
-                priority_3=EXCLUDED.priority_3, priority_4=EXCLUDED.priority_4,
-                priority_5=EXCLUDED.priority_5,
-                estimated_deep_work_hours=EXCLUDED.estimated_deep_work_hours,
-                predicted_main_derailer=EXCLUDED.predicted_main_derailer
+                priority_1                = EXCLUDED.priority_1,
+                priority_2                = EXCLUDED.priority_2,
+                priority_3                = EXCLUDED.priority_3,
+                estimated_deep_work_hours = EXCLUDED.estimated_deep_work_hours
         """, (
             user_id, next_week,
-            priorities[0] if len(priorities) > 0 else None,
-            priorities[1] if len(priorities) > 1 else None,
-            priorities[2] if len(priorities) > 2 else None,
-            priorities[3] if len(priorities) > 3 else None,
-            priorities[4] if len(priorities) > 4 else None,
+            next_pri[0] if len(next_pri) > 0 else None,
+            next_pri[1] if len(next_pri) > 1 else None,
+            next_pri[2] if len(next_pri) > 2 else None,
             planning_data.get("deep_work_hours"),
-            ", ".join(planning_data.get("derailers", [])),
         ))
 
 
@@ -419,6 +439,63 @@ def generate_report():
         as_attachment=True,
         download_name=f"cadence-report-{week_start}.pdf",
     )
+
+
+# ---------------------------------------------------------------------------
+# Executive Coach Report
+# ---------------------------------------------------------------------------
+
+@app.route("/api/report/coach", methods=["POST"])
+@require_auth
+def coach_report():
+    d = request.json or {}
+    week_start = d.get("week_start_date", current_week_start())
+    profile = dict(get_user_profile(g.user_id) or {})
+    metrics = calculate_all_metrics(g.user_id, week_start)
+
+    friday = query(
+        "SELECT * FROM weekly_friday_reviews WHERE user_id=%s AND week_start_date=%s",
+        (g.user_id, week_start), one=True
+    )
+    monday = query(
+        "SELECT * FROM weekly_monday_inputs WHERE user_id=%s AND week_start_date=%s",
+        (g.user_id, week_start), one=True
+    )
+    tasks = query(
+        "SELECT t.description, t.status FROM tasks t "
+        "JOIN daily_logs dl ON t.daily_log_id=dl.id "
+        "WHERE t.user_id=%s AND dl.date=%s",
+        (g.user_id, week_start)
+    ) or []
+
+    priorities = []
+    if friday:
+        for i in range(1, 4):
+            status = friday.get(f"priority_{i}_status")
+            desc = monday.get(f"priority_{i}") if monday else None
+            if status:
+                priorities.append({"description": desc or f"Priority {i}", "status": status})
+
+    fpi = metrics.get("friction_pattern_index") or {}
+    rag_query = (
+        f"{fpi.get('tag', '')} {profile.get('role_type', 'executive')} "
+        "execution deep work priorities intervention"
+    ).strip()
+    chunks = retrieve_relevant_chunks(rag_query, top_k=6)
+    kb_context = format_rag_context(chunks)
+
+    report_text = generate_coach_report(
+        profile, metrics, priorities, tasks,
+        dict(friday) if friday else {},
+        kb_context, week_start
+    )
+
+    return jsonify({
+        "report": report_text,
+        "week_start_date": week_start,
+        "metrics": metrics,
+        "priorities": priorities,
+    })
 
 
 # ---------------------------------------------------------------------------

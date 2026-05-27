@@ -81,7 +81,7 @@ export default function Dashboard() {
   const dots    = m.action_dots || {};
 
   const priorityCount = m.priority_completion_rate != null
-    ? `${Math.round(m.priority_completion_rate * 5)}/5`
+    ? `${Math.round(m.priority_completion_rate * 3)}/3`
     : "—";
 
   return (
@@ -140,7 +140,7 @@ export default function Dashboard() {
         <MetricCard
           label="Deep Work"
           value={m.deep_work_frequency != null ? m.deep_work_frequency.toFixed(1) : "—"}
-          suffix=" blk/day"
+          suffix=" hrs/wk"
           dot={dots.deep_work_frequency}
         />
         <MetricCard

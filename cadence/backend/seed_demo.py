@@ -350,81 +350,71 @@ REFLECTIONS = {
 # Persona parameter generators
 # ---------------------------------------------------------------------------
 
-def persona_params(persona, week_index, total_weeks=26):
-    """Return (exec_score, deep_work_blocks, friction_tag, planning_accuracy, deferral_rate)
+def persona_params(persona, week_index, total_weeks=8):
+    """Return (exec_score, deep_work_hours, friction_tag, planning_accuracy, deferral_rate)
     for a given persona and week index (0 = earliest, total_weeks-1 = most recent)."""
 
-    progress = week_index / max(total_weeks - 1, 1)  # 0.0 → 1.0 over the 26 weeks
+    progress = week_index / max(total_weeks - 1, 1)  # 0.0 → 1.0
 
     if persona == "ligia":
-        score = round(random.gauss(7.2, 1.2))
-        blocks = random.choices(["1", "2", "2", "3+"], weights=[1, 4, 4, 1])[0]
-        friction = random.choice(FRICTION_TAGS["ligia"])
-        plan_acc = random.gauss(0.70, 0.08)
-        defer_rate = random.gauss(0.20, 0.07)
+        score      = round(random.gauss(7.2, 1.2))
+        deep_h     = random.gauss(10.0, 2.0)          # ~10h, lots of meetings
+        friction   = random.choice(FRICTION_TAGS["ligia"])
+        plan_acc   = random.gauss(0.70, 0.08)
+        defer_rate = random.gauss(0.18, 0.07)
 
     elif persona == "tifano":
-        # Slight improvement over time
-        base_score = 6.1 + progress * 0.8
-        score = round(random.gauss(base_score, 1.8))
-        blocks = random.choices(["0", "1", "1", "2"], weights=[1, 5, 5, 2])[0]
-        friction = random.choice(FRICTION_TAGS["tifano"])
-        plan_acc = random.gauss(0.55 + progress * 0.10, 0.10)
-        defer_rate = random.gauss(0.30, 0.08)
+        base_score = 6.1 + progress * 1.2
+        score      = round(random.gauss(base_score, 1.5))
+        deep_h     = random.gauss(7.0 + progress * 2.0, 1.5)   # improves over time
+        friction   = random.choice(FRICTION_TAGS["tifano"])
+        plan_acc   = random.gauss(0.55 + progress * 0.15, 0.10)
+        defer_rate = random.gauss(0.32 - progress * 0.10, 0.08)
 
     elif persona == "qasim":
-        score = round(random.gauss(8.3, 0.8))
-        blocks = random.choices(["2", "3+", "3+"], weights=[2, 4, 4])[0]
-        friction = random.choice(FRICTION_TAGS["qasim"])
-        plan_acc = random.gauss(0.83, 0.07)
-        defer_rate = random.gauss(0.10, 0.05)
+        score      = round(random.gauss(8.3, 0.7))
+        deep_h     = random.gauss(17.0, 1.5)           # high deep work
+        friction   = random.choice(FRICTION_TAGS["qasim"])
+        plan_acc   = random.gauss(0.84, 0.06)
+        defer_rate = random.gauss(0.08, 0.04)
 
     elif persona == "dilorom":
-        # Improves second half
-        base_score = 5.8 + progress * 1.4
-        score = round(random.gauss(base_score, 1.5))
-        blocks = random.choices(["1", "1", "2"], weights=[3, 3, 2])[0]
-        friction = random.choice(FRICTION_TAGS["dilorom"])
-        plan_acc = random.gauss(0.62 + progress * 0.15, 0.10)
-        defer_rate = random.gauss(0.40 - progress * 0.15, 0.08)
+        base_score = 5.8 + progress * 1.8
+        score      = round(random.gauss(base_score, 1.4))
+        deep_h     = random.gauss(9.0 + progress * 2.0, 1.5)
+        friction   = random.choice(FRICTION_TAGS["dilorom"])
+        plan_acc   = random.gauss(0.58 + progress * 0.20, 0.10)
+        defer_rate = random.gauss(0.42 - progress * 0.20, 0.08)
 
     elif persona == "sherzod":
-        score = round(random.gauss(7.0, 1.4))
-        blocks = random.choices(["1", "2", "3+", "0"], weights=[3, 4, 2, 1])[0]
-        friction = random.choice(FRICTION_TAGS["sherzod"])
-        plan_acc = random.gauss(0.57, 0.12)
-        defer_rate = random.gauss(0.25, 0.10)
+        score      = round(random.gauss(7.0, 1.4))
+        deep_h     = random.gauss(7.5, 2.0)            # always overcommitted
+        friction   = random.choice(FRICTION_TAGS["sherzod"])
+        plan_acc   = random.gauss(0.55, 0.12)
+        defer_rate = random.gauss(0.28, 0.10)
 
     elif persona == "taash":
-        # Clear arc: starts ~6, ends ~9
-        base_score = 6.0 + progress * 3.0
-        score = round(random.gauss(base_score, max(1.5 - progress * 0.8, 0.5)))
-        early_blocks = ["0", "1"]
-        late_blocks = ["2", "3+"]
-        if progress < 0.4:
-            block_options = ["0", "0", "1", "1"]
-        elif progress < 0.7:
-            block_options = ["1", "1", "2", "2"]
-        else:
-            block_options = ["2", "2", "3+", "3+"]
-        blocks = random.choice(block_options)
-        friction = random.choice(FRICTION_TAGS["taash"])
-        plan_acc = random.gauss(0.55 + progress * 0.30, max(0.12 - progress * 0.07, 0.04))
-        defer_rate = random.gauss(0.35 - progress * 0.20, 0.08)
+        # Clear arc: starts struggling, ends high-performing
+        base_score = 5.5 + progress * 3.5
+        score      = round(random.gauss(base_score, max(1.5 - progress, 0.5)))
+        deep_h     = random.gauss(5.0 + progress * 12.0, max(2.0 - progress, 0.5))
+        friction   = random.choice(FRICTION_TAGS["taash"])
+        plan_acc   = random.gauss(0.45 + progress * 0.40, max(0.12 - progress * 0.08, 0.04))
+        defer_rate = random.gauss(0.38 - progress * 0.25, 0.08)
 
     else:
-        score = round(random.gauss(7.0, 1.0))
-        blocks = "2"
-        friction = "meetings"
-        plan_acc = 0.70
+        score      = round(random.gauss(7.0, 1.0))
+        deep_h     = 10.0
+        friction   = "meetings"
+        plan_acc   = 0.70
         defer_rate = 0.20
 
-    # Clamp values
-    score = max(1, min(10, score))
-    plan_acc = max(0.1, min(1.0, plan_acc))
-    defer_rate = max(0.0, min(0.9, defer_rate))
+    score      = max(1,   min(10,  score))
+    deep_h     = max(1.0, min(25.0, deep_h))
+    plan_acc   = max(0.1, min(1.0,  plan_acc))
+    defer_rate = max(0.0, min(0.9,  defer_rate))
 
-    return score, blocks, friction, plan_acc, defer_rate
+    return score, round(deep_h, 1), friction, plan_acc, defer_rate
 
 
 def task_status(planned, defer_rate):
@@ -545,137 +535,127 @@ def seed_all_users():
         # 4 weeks (1 month), most recent week last
         mondays = [current_monday - timedelta(weeks=(7 - i)) for i in range(8)]
 
-        total_daily_logs = 0
-        total_tasks = 0
-        total_metrics = 0
+        total_weekly_logs = 0
+        total_tasks       = 0
+        total_metrics     = 0
 
         for user in DEMO_USERS:
-            uid = user["id"]
+            uid     = user["id"]
             persona = user["persona"]
-            pool = PRIORITIES[persona]
-            free_text_pool = FREE_TEXTS[persona]
+            pool    = PRIORITIES[persona]
             reflection_pool = REFLECTIONS[persona]
 
             for week_index, monday in enumerate(mondays):
-                # Deterministic seed per user per week
+                if monday > today:
+                    continue
+
                 seed_key = uid + str(monday)
                 random.seed(hash(seed_key) & 0xFFFFFFFF)
 
-                exec_score, deep_blocks, friction, plan_acc, defer_rate = persona_params(
+                exec_score, deep_hours, friction, plan_acc, defer_rate = persona_params(
                     persona, week_index, total_weeks=len(mondays)
                 )
 
-                # Shuffle pool deterministically and pick 5 priorities
+                # Shuffle priority pool and pick 3 priorities + 10 tasks
                 shuffled = pool[:]
                 random.shuffle(shuffled)
-                p1, p2, p3, p4, p5 = shuffled[:5]
+                p1_desc, p2_desc, p3_desc = shuffled[0], shuffled[1], shuffled[2]
+                task_pool = shuffled[3:13] if len(shuffled) >= 13 else shuffled[3:]
+                # pad to 10 if needed
+                while len(task_pool) < 10:
+                    task_pool.append(random.choice(pool))
 
                 # ---- weekly_monday_inputs ----
-                estimated_deep = round(random.uniform(8, 18), 1)
                 cur.execute("""
                     INSERT INTO weekly_monday_inputs
                         (user_id, week_start_date, priority_1, priority_2, priority_3,
-                         priority_4, priority_5, estimated_deep_work_hours)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                         estimated_deep_work_hours)
+                    VALUES (%s,%s,%s,%s,%s,%s)
                     ON CONFLICT (user_id, week_start_date) DO NOTHING
-                """, (uid, monday.isoformat(), p1, p2, p3, p4, p5, estimated_deep))
+                """, (uid, monday.isoformat(), p1_desc, p2_desc, p3_desc, round(deep_hours, 1)))
 
-                # ---- daily_logs (Mon–Fri) ----
-                week_log_ids = []
-                for day_offset in range(5):
-                    log_day = monday + timedelta(days=day_offset)
-                    # Skip future dates
-                    if log_day > today:
-                        continue
+                # ---- ONE weekly log entry (dated Monday) ----
+                reflection = random.choice(reflection_pool)
+                def hours_to_blocks(h):
+                    if h < 4:  return "0"
+                    if h < 8:  return "1"
+                    if h < 14: return "2"
+                    return "3+"
 
-                    day_score = max(1, min(10, exec_score + random.randint(-1, 1)))
-                    free_text = random.choice(free_text_pool)
+                cur.execute("""
+                    INSERT INTO daily_logs
+                        (user_id, date, execution_score, friction_tag, deep_work_blocks, free_text)
+                    VALUES (%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (user_id, date) DO UPDATE SET
+                        execution_score  = EXCLUDED.execution_score,
+                        friction_tag     = EXCLUDED.friction_tag,
+                        deep_work_blocks = EXCLUDED.deep_work_blocks,
+                        free_text        = EXCLUDED.free_text
+                    RETURNING id
+                """, (uid, monday.isoformat(), exec_score, friction,
+                      hours_to_blocks(deep_hours), reflection))
+                log_row = cur.fetchone()
+                if not log_row:
+                    continue
+                log_id = log_row["id"]
+                total_weekly_logs += 1
 
-                    cur.execute("""
-                        INSERT INTO daily_logs
-                            (user_id, date, execution_score, friction_tag,
-                             deep_work_blocks, free_text)
-                        VALUES (%s,%s,%s,%s,%s,%s)
-                        ON CONFLICT DO NOTHING
-                        RETURNING id
-                    """, (uid, log_day.isoformat(), day_score, friction, deep_blocks, free_text))
-                    row = cur.fetchone()
-                    if row:
-                        week_log_ids.append((row["id"], log_day, day_score))
-                        total_daily_logs += 1
-
-                # ---- tasks for each daily log ----
+                # ---- 10 tasks for this weekly log ----
                 task_rows = []
-                for (log_id, log_day, _) in week_log_ids:
-                    num_tasks = random.randint(3, 5)
-                    task_pool = shuffled[:8] if len(shuffled) >= 8 else shuffled
-                    chosen_tasks = random.sample(task_pool, min(num_tasks, len(task_pool)))
-                    for task_desc in chosen_tasks:
-                        status = task_status(plan_acc, defer_rate)
-                        task_rows.append((log_id, uid, task_desc[:200], status, True))
+                for task_desc in task_pool[:10]:
+                    status = task_status(plan_acc, defer_rate)
+                    task_rows.append((log_id, uid, task_desc[:200], status, True))
 
                 if task_rows:
                     psycopg2.extras.execute_values(cur, """
                         INSERT INTO tasks (daily_log_id, user_id, description, status, is_planned)
                         VALUES %s
                         ON CONFLICT DO NOTHING
-                    """, task_rows,
-                    template="(%s::uuid,%s::uuid,%s,%s,%s)")
+                    """, task_rows, template="(%s::uuid,%s::uuid,%s,%s,%s)")
                     total_tasks += len(task_rows)
 
                 # ---- weekly_friday_reviews ----
-                friday = monday + timedelta(days=4)
                 p1_s = task_status(plan_acc, defer_rate)
                 p2_s = task_status(plan_acc, defer_rate)
                 p3_s = task_status(plan_acc, defer_rate)
-                p4_s = task_status(plan_acc, defer_rate)
-                p5_s = task_status(plan_acc, defer_rate)
-                if friday <= today:
-                    deep_h, meetings_h, admin_h, reactive_h, learning_h, low_h = week_time_allocation(
-                        persona, exec_score
-                    )
-                    reflection = random.choice(reflection_pool)
+                deep_h, _, _, reactive_h, _, _ = week_time_allocation(persona, exec_score)
 
-                    cur.execute("""
-                        INSERT INTO weekly_friday_reviews
-                            (user_id, week_start_date,
-                             priority_1_status, priority_2_status, priority_3_status,
-                             priority_4_status, priority_5_status,
-                             deep_work_hours, meetings_hours, admin_hours,
-                             reactive_work_hours, learning_hours, low_leverage_hours,
-                             weekly_execution_score, reflection_text)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                        ON CONFLICT (user_id, week_start_date) DO NOTHING
-                    """, (
-                        uid, monday.isoformat(),
-                        p1_s, p2_s, p3_s, p4_s, p5_s,
-                        deep_h, meetings_h, admin_h,
-                        reactive_h, learning_h, low_h,
-                        exec_score, reflection,
-                    ))
+                cur.execute("""
+                    INSERT INTO weekly_friday_reviews
+                        (user_id, week_start_date,
+                         priority_1_status, priority_2_status, priority_3_status,
+                         deep_work_hours, reactive_work_hours,
+                         weekly_execution_score, reflection_text)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (user_id, week_start_date) DO UPDATE SET
+                        priority_1_status      = EXCLUDED.priority_1_status,
+                        priority_2_status      = EXCLUDED.priority_2_status,
+                        priority_3_status      = EXCLUDED.priority_3_status,
+                        deep_work_hours        = EXCLUDED.deep_work_hours,
+                        reactive_work_hours    = EXCLUDED.reactive_work_hours,
+                        weekly_execution_score = EXCLUDED.weekly_execution_score,
+                        reflection_text        = EXCLUDED.reflection_text
+                """, (uid, monday.isoformat(),
+                      p1_s, p2_s, p3_s,
+                      round(deep_h, 1), round(reactive_h, 1),
+                      exec_score, reflection))
 
                 # ---- weekly_metrics ----
-                day_scores = [ds for (_, _, ds) in week_log_ids]
-                avg_exec = round(sum(day_scores) / len(day_scores), 2) if day_scores else None
-
-                def block_to_num(b):
-                    return 3 if b == "3+" else int(b) if b else 0
-
-                dwf = round(block_to_num(deep_blocks), 2) if week_log_ids else None
-
-                total_t = len(task_rows)
+                total_t    = len(task_rows)
                 deferred_t = sum(1 for t in task_rows if t[3] == "deferred")
-                done_t = sum(1 for t in task_rows if t[3] == "done")
-                dr_val = round(deferred_t / total_t, 3) if total_t > 0 else None
-                pa_val = round(done_t / total_t, 3) if total_t > 0 else None
+                done_t     = sum(1 for t in task_rows if t[3] == "done")
+                pa_val     = round(done_t / total_t, 3) if total_t > 0 else None
 
-                done_p = sum(1 for s in [p1_s, p2_s, p3_s, p4_s, p5_s] if s == "done")
-                pcr_val = round(done_p / 5, 3) if friday <= today else None
+                # deferral: (deferred tasks + deferred priorities) / (10 + 3)
+                p_deferred = sum(1 for s in [p1_s, p2_s, p3_s] if s == "deferred")
+                dr_total   = total_t + 3
+                dr_val     = round((deferred_t + p_deferred) / dr_total, 3) if dr_total > 0 else None
 
-                fpi_val = ({"tag": friction, "frequency_pct": 100.0, "count": len(week_log_ids)}
-                           if week_log_ids else None)
-                est_val = ({"current_avg": avg_exec, "trend": "stable", "delta": None}
-                           if avg_exec is not None else None)
+                done_p  = sum(1 for s in [p1_s, p2_s, p3_s] if s == "done")
+                pcr_val = round(done_p / 3, 3)
+
+                fpi_val = {"tag": friction, "frequency_pct": 100.0, "count": 1}
+                est_val = {"current_avg": exec_score, "trend": "stable", "delta": None}
 
                 cur.execute("""
                     INSERT INTO weekly_metrics
@@ -685,20 +665,18 @@ def seed_all_users():
                          planning_accuracy, avg_execution_score)
                     VALUES (%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s,%s)
                     ON CONFLICT (user_id, week_start_date) DO UPDATE SET
-                        priority_completion_rate=EXCLUDED.priority_completion_rate,
-                        deep_work_frequency=EXCLUDED.deep_work_frequency,
-                        friction_pattern_index=EXCLUDED.friction_pattern_index,
-                        execution_score_trend=EXCLUDED.execution_score_trend,
-                        deferral_rate=EXCLUDED.deferral_rate,
-                        planning_accuracy=EXCLUDED.planning_accuracy,
-                        avg_execution_score=EXCLUDED.avg_execution_score,
-                        calculated_at=NOW()
-                """, (
-                    uid, monday.isoformat(),
-                    pcr_val, dwf,
-                    json.dumps(fpi_val), json.dumps(est_val),
-                    dr_val, pa_val, avg_exec,
-                ))
+                        priority_completion_rate = EXCLUDED.priority_completion_rate,
+                        deep_work_frequency      = EXCLUDED.deep_work_frequency,
+                        friction_pattern_index   = EXCLUDED.friction_pattern_index,
+                        execution_score_trend    = EXCLUDED.execution_score_trend,
+                        deferral_rate            = EXCLUDED.deferral_rate,
+                        planning_accuracy        = EXCLUDED.planning_accuracy,
+                        avg_execution_score      = EXCLUDED.avg_execution_score,
+                        calculated_at            = NOW()
+                """, (uid, monday.isoformat(),
+                      pcr_val, round(deep_h, 2),
+                      json.dumps(fpi_val), json.dumps(est_val),
+                      dr_val, pa_val, exec_score))
                 total_metrics += 1
 
         conn.commit()
@@ -712,8 +690,8 @@ def seed_all_users():
 
     return {
         "users_seeded": len(DEMO_USERS),
-        "weeks": len(mondays),
-        "daily_logs": total_daily_logs,
-        "tasks": total_tasks,
+        "weeks":        len(mondays),
+        "weekly_logs":  total_weekly_logs,
+        "tasks":        total_tasks,
         "metrics_rows": total_metrics,
     }
