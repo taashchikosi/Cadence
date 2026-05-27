@@ -50,33 +50,37 @@ def build_weekly_review_prompt(user_id, week_start_date, metrics, patterns, user
 - Known failure pattern: {user_profile.get('self_identified_failure_pattern', '?')}
 - Active goals: {user_profile.get('top_3_active_goals', '?')}""")
 
+    dwf = metrics.get('deep_work_frequency')
+    dwf_str = f"{dwf}h" if dwf is not None else "N/A"
     sections.append(f"""
 ## THIS WEEK'S METRICS
-- Priority Completion Rate: {_pct(metrics.get('priority_completion_rate'))}
-- Deep Work Frequency: {metrics.get('deep_work_frequency', 'N/A')} blocks/day
-- Deferral Rate: {_pct(metrics.get('deferral_rate'))}
-- Planning Accuracy: {_pct(metrics.get('planning_accuracy'))}
-- Execution Score: {est.get('current_avg', 'N/A')}/10 (trend: {est.get('trend', 'N/A')})
+- Execution Score: {est.get('current_avg', 'N/A')}/10 (trend: {est.get('trend', 'N/A')}, delta: {est.get('delta', 'N/A')})
+- Priority Completion Rate: {_pct(metrics.get('priority_completion_rate'))} (3 priorities)
+- Planning Accuracy: {_pct(metrics.get('planning_accuracy'))} (tasks completed vs planned)
+- Deferral Rate: {_pct(metrics.get('deferral_rate'))} (deferred tasks + priorities / total)
+- Deep Work: {dwf_str}/week
 - Reactive Work Ratio: {_pct(metrics.get('reactive_work_ratio'))}
-- Primary Friction: {fpi.get('tag', 'N/A')} ({fpi.get('frequency_pct', 'N/A')}% of days)""")
+- Primary Friction: {fpi.get('tag', 'N/A').replace('_', ' ')} ({fpi.get('frequency_pct', 'N/A')}% intensity)""")
 
     if monday:
-        p = [monday.get(f"priority_{i}") for i in range(1, 6) if monday.get(f"priority_{i}")]
+        p = [monday.get(f"priority_{i}") for i in range(1, 4) if monday.get(f"priority_{i}")]
         sections.append(f"""
-## MONDAY COMMITMENTS
-- Priorities: {' | '.join(p)}
-- Estimated deep work: {monday.get('estimated_deep_work_hours')}h
-- Predicted derailer: {monday.get('predicted_main_derailer')}""")
+## MONDAY COMMITMENTS (3 priorities)
+{chr(10).join(f"- P{i+1}: {desc}" for i, desc in enumerate(p))}
+- Estimated deep work: {monday.get('estimated_deep_work_hours')}h""")
 
     if friday:
         p_outcomes = []
-        for i in range(1, 6):
-            if monday and monday.get(f"priority_{i}") and friday.get(f"priority_{i}_status"):
-                p_outcomes.append(f"{monday.get(f'priority_{i}')} → {friday.get(f'priority_{i}_status')}")
+        for i in range(1, 4):
+            desc = monday.get(f"priority_{i}") if monday else None
+            status = friday.get(f"priority_{i}_status")
+            if status:
+                label = desc if desc else f"Priority {i}"
+                p_outcomes.append(f"- {label} → {status}")
         sections.append(f"""
 ## FRIDAY OUTCOMES
-{chr(10).join(p_outcomes)}
-- Time: Deep {friday.get('deep_work_hours')}h | Admin {friday.get('admin_hours')}h | Meetings {friday.get('meetings_hours')}h | Reactive {friday.get('reactive_work_hours')}h | Learning {friday.get('learning_hours')}h | Low-leverage {friday.get('low_leverage_hours')}h
+{chr(10).join(p_outcomes) if p_outcomes else '- No priority outcomes recorded'}
+- Deep work: {friday.get('deep_work_hours')}h | Meetings: {friday.get('meetings_hours')}h | Reactive: {friday.get('reactive_work_hours')}h | Admin: {friday.get('admin_hours')}h
 - Execution score: {friday.get('weekly_execution_score')}/10
 - Reflection: {friday.get('reflection_text') or 'None'}""")
 

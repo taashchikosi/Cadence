@@ -392,10 +392,17 @@ def get_dashboard():
         log["id"] = str(log["id"])
         logs_with_tasks.append(log)
 
+    # Fetch the review for the specific week being viewed, falling back to the most recent
     latest_review = query(
-        "SELECT * FROM ai_reviews WHERE user_id=%s ORDER BY created_at DESC LIMIT 1",
-        (g.user_id,), one=True
+        "SELECT * FROM ai_reviews WHERE user_id=%s AND week_start_date=%s "
+        "ORDER BY created_at DESC LIMIT 1",
+        (g.user_id, week_start), one=True
     )
+    if not latest_review:
+        latest_review = query(
+            "SELECT * FROM ai_reviews WHERE user_id=%s ORDER BY created_at DESC LIMIT 1",
+            (g.user_id,), one=True
+        )
 
     profile = get_user_profile(g.user_id)
 
