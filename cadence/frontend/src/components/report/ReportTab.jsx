@@ -89,6 +89,10 @@ export default function ReportTab() {
 
   const isCurrentWeek = weekStart >= currentMonday;
 
+  function handleDownload() {
+    window.print();
+  }
+
   async function handleGenerate() {
     setLoading(true);
     setError(null);
@@ -156,7 +160,7 @@ export default function ReportTab() {
 
       {/* Rendered report */}
       {report && !loading && (
-        <div className="space-y-4">
+        <div id="printable-report" className="space-y-4">
 
           {/* Metrics summary bar */}
           {report.metrics && (
@@ -219,8 +223,11 @@ export default function ReportTab() {
             </div>
           </div>
 
-          {/* Regenerate */}
-          <div className="flex justify-center gap-3">
+          {/* Actions */}
+          <div className="flex justify-center gap-3 no-print">
+            <button onClick={handleDownload} className="btn-gold text-xs px-5 py-2">
+              ↓ Download PDF
+            </button>
             <button onClick={handleGenerate} className="btn-ghost text-xs px-4 py-2">
               ↺ Regenerate
             </button>

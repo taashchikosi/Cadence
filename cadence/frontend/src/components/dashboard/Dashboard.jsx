@@ -146,7 +146,7 @@ export default function Dashboard() {
         <MetricCard
           label="Primary Friction"
           value={fpi.tag ? (FRICTION_LABELS[fpi.tag] || fpi.tag.replace(/_/g, " ")) : "—"}
-          sub={fpi.frequency_pct != null ? `${fpi.frequency_pct}% of days` : null}
+          sub={fpi.tag ? "primary this week" : null}
         />
       </div>
 

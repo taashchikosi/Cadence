@@ -76,3 +76,46 @@ body {
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line { stroke: #1a1a1a; }
 .recharts-text { fill: #555; font-size: 11px; }
+
+/* ── Print / PDF export ──────────────────────────────────────── */
+@media print {
+  @page { margin: 16mm 18mm; size: A4; }
+
+  /* Hide everything except the report */
+  body > * { display: none !important; }
+  #printable-report { display: block !important; }
+
+  /* Reset colours for print */
+  body { background: #fff !important; color: #111 !important; }
+  #printable-report { color: #111 !important; font-family: 'Inter', sans-serif; }
+
+  /* Cards become plain bordered boxes */
+  #printable-report .card {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    border-radius: 4px !important;
+  }
+
+  /* Text colours */
+  #printable-report .text-white,
+  #printable-report .text-gray-300 { color: #111 !important; }
+  #printable-report .text-gray-400,
+  #printable-report .text-gray-500,
+  #printable-report .text-gray-600 { color: #555 !important; }
+  #printable-report .text-gold     { color: #8B6914 !important; }
+  #printable-report strong         { color: #000 !important; }
+
+  /* Section header rule */
+  #printable-report .h-px { background: #ccc !important; }
+
+  /* Status badges */
+  #printable-report .bg-emerald-900\/40 { background: #d1fae5 !important; }
+  #printable-report .text-emerald-400   { color: #065f46 !important; }
+  #printable-report .bg-amber-900\/40   { background: #fef3c7 !important; }
+  #printable-report .text-amber-400     { color: #92400e !important; }
+  #printable-report .bg-red-900\/30     { background: #fee2e2 !important; }
+  #printable-report .text-red-400       { color: #991b1b !important; }
+
+  /* Hide action buttons */
+  .no-print { display: none !important; }
+}
