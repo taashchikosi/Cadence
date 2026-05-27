@@ -7,7 +7,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background-color: #000000;
+  background-color: #050816;
   color: #F5F5F5;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -24,15 +24,16 @@ body {
   .btn-gold {
     @apply bg-gold hover:bg-gold-light text-black font-semibold text-sm
            px-4 py-2.5 rounded transition-all disabled:opacity-40 cursor-pointer;
+    box-shadow: 0 0 16px rgba(212,165,32,0.4);
   }
 
   .btn-ghost {
-    @apply bg-transparent border border-dark-border hover:border-gold-muted
+    @apply bg-transparent border border-dark-border hover:border-neon-teal
            text-gray-400 hover:text-white text-sm px-4 py-2.5 rounded transition-colors cursor-pointer;
   }
 
   .card {
-    @apply bg-dark-surface border border-dark-border rounded-lg;
+    @apply bg-dark-surface border border-dark-border rounded-xl;
   }
 
   .label-xs {
@@ -65,16 +66,16 @@ body {
 
 /* Radial glow background for intro */
 .intro-bg {
-  background: radial-gradient(ellipse 80% 60% at 50% 40%, #1a0f0022 0%, #000 60%);
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, #1a0f0022 0%, #050816 60%);
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #000000; }
-::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #D4A52044; }
+::-webkit-scrollbar-track { background: #050816; }
+::-webkit-scrollbar-thumb { background: #1E2245; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #D4A52055; }
 
 .recharts-cartesian-grid-horizontal line,
-.recharts-cartesian-grid-vertical line { stroke: #1a1a1a; }
+.recharts-cartesian-grid-vertical line { stroke: #131629; }
 .recharts-text { fill: #555; font-size: 11px; }
 
 /* ── Print / PDF export ──────────────────────────────────────── */
@@ -94,6 +95,7 @@ body {
     border: 1px solid #ccc !important;
     background: #fff !important;
     border-radius: 4px !important;
+    box-shadow: none !important;
   }
 
   /* Text colours */

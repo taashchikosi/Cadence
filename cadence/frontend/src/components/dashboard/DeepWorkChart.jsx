@@ -3,15 +3,16 @@ import {
   Tooltip, CartesianGrid,
 } from "recharts";
 
-const GOLD = "#D4A520";
+const TEAL = "#06B6D4";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-dark-elevated border border-dark-border rounded-lg px-3 py-2.5 text-xs shadow-xl">
+    <div style={{ background: "#131629", border: "1px solid #1E2245" }}
+      className="rounded-lg px-3 py-2.5 text-xs shadow-xl">
       <p className="text-gray-400 mb-1 font-medium">Week of {label}</p>
       {payload[0]?.value != null && (
-        <p className="text-white font-medium">{payload[0].value.toFixed(1)}h deep work</p>
+        <p style={{ color: TEAL }} className="font-medium">{payload[0].value.toFixed(1)}h deep work</p>
       )}
     </div>
   );
@@ -34,16 +35,16 @@ export default function DeepWorkChart({ history = [] }) {
       <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
         <defs>
           <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={GOLD} stopOpacity={0.9} />
-            <stop offset="100%" stopColor={GOLD} stopOpacity={0.35} />
+            <stop offset="0%"   stopColor={TEAL} stopOpacity={0.95} />
+            <stop offset="100%" stopColor={TEAL} stopOpacity={0.25} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
-        <XAxis dataKey="week" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false}
+        <CartesianGrid strokeDasharray="3 3" stroke="#131629" vertical={false} />
+        <XAxis dataKey="week" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
           tickFormatter={v => `${v}h`} />
         <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="hours" name="Deep Work Hours" fill="url(#barGrad)" radius={[3, 3, 0, 0]} maxBarSize={40} />
+        <Bar dataKey="hours" name="Deep Work Hours" fill="url(#barGrad)" radius={[4, 4, 0, 0]} maxBarSize={40} />
       </BarChart>
     </ResponsiveContainer>
   );

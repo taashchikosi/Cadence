@@ -43,9 +43,9 @@ export default function App() {
   const voicePref    = profile?.voice_preference || "female";
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      <header className="border-b border-dark-border bg-dark-surface sticky top-0 z-10"
-        style={{ borderBottomColor: "#1E1E1E" }}>
+    <div className="min-h-screen bg-dark flex flex-col">
+      <header className="border-b border-dark-border bg-dark-surface sticky top-0 z-10 backdrop-blur-sm"
+        style={{ borderBottomColor: "#1E2245", background: "rgba(12,15,30,0.95)" }}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
 
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setEntered(false)}>

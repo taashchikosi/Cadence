@@ -3,14 +3,15 @@ import {
   Tooltip, CartesianGrid, ReferenceLine,
 } from "recharts";
 
-const GOLD = "#D4A520";
-const RED  = "#ef4444";
-const TEAL = "#2dd4bf";
+const ORANGE = "#F97316";
+const CYAN   = "#06B6D4";
+const PINK   = "#F43F5E";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-dark-elevated border border-dark-border rounded-lg px-3 py-2.5 text-xs shadow-xl">
+    <div style={{ background: "#131629", border: "1px solid #1E2245" }}
+      className="rounded-lg px-3 py-2.5 text-xs shadow-xl">
       <p className="text-gray-400 mb-2 font-medium">Week of {label}</p>
       {payload.map((p, i) => p.value != null && (
         <div key={i} className="flex items-center gap-2 mb-1">
@@ -40,20 +41,20 @@ export default function PerformanceChart({ history = [] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
-        <XAxis dataKey="week" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false}
+        <CartesianGrid strokeDasharray="3 3" stroke="#131629" vertical={false} />
+        <XAxis dataKey="week" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
           interval={data.length > 6 ? 1 : 0} />
-        <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false}
+        <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
           domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `${v}%`} />
         <Tooltip content={<CustomTooltip />} />
-        <ReferenceLine y={80} stroke={GOLD} strokeOpacity={0.12} strokeDasharray="4 4" />
-        <ReferenceLine y={50} stroke="#333"  strokeOpacity={0.3}  strokeDasharray="4 4" />
+        <ReferenceLine y={80} stroke={ORANGE} strokeOpacity={0.15} strokeDasharray="4 4" />
+        <ReferenceLine y={50} stroke="#1E2245" strokeOpacity={0.5}  strokeDasharray="4 4" />
 
-        <Line dataKey="score"    name="Execution Score"   stroke={GOLD} strokeWidth={2.5} type="monotone"
-          dot={{ fill: GOLD, r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: GOLD }} />
-        <Line dataKey="planning" name="Planning Accuracy" stroke={TEAL} strokeWidth={1.5} type="monotone"
+        <Line dataKey="score"    name="Execution Score"   stroke={ORANGE} strokeWidth={2.5} type="monotone"
+          dot={{ fill: ORANGE, r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: ORANGE }} />
+        <Line dataKey="planning" name="Planning Accuracy" stroke={CYAN}   strokeWidth={1.8} type="monotone"
           dot={false} strokeDasharray="6 3" />
-        <Line dataKey="deferral" name="Deferral Rate"     stroke={RED}  strokeWidth={1.5} type="monotone"
+        <Line dataKey="deferral" name="Deferral Rate"     stroke={PINK}   strokeWidth={1.8} type="monotone"
           dot={false} strokeDasharray="4 3" />
       </LineChart>
     </ResponsiveContainer>

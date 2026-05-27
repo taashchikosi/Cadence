@@ -119,34 +119,39 @@ export default function Dashboard() {
           value={m.avg_execution_score != null ? m.avg_execution_score.toFixed(1) : "—"}
           suffix="/10"
           dot={m.avg_execution_score >= 8 ? "green" : m.avg_execution_score >= 6 ? "amber" : m.avg_execution_score != null ? "red" : null}
-          highlight
+          accent="orange"
         />
         <MetricCard
           label="Priority Completion"
           value={priorityCount}
           sub={m.priority_completion_rate != null ? pct(m.priority_completion_rate) + " complete" : "No review yet"}
           dot={dots.priority_completion_rate}
+          accent="gold"
         />
         <MetricCard
           label="Planning Accuracy"
           value={pct(m.planning_accuracy)}
           dot={dots.planning_accuracy}
+          accent="teal"
         />
         <MetricCard
           label="Deferral Rate"
           value={pct(m.deferral_rate)}
           dot={dots.deferral_rate}
+          accent="pink"
         />
         <MetricCard
           label="Deep Work"
           value={m.deep_work_frequency != null ? m.deep_work_frequency.toFixed(1) : "—"}
           suffix=" hrs/wk"
           dot={dots.deep_work_frequency}
+          accent="blue"
         />
         <MetricCard
           label="Primary Friction"
           value={fpi.tag ? (FRICTION_LABELS[fpi.tag] || fpi.tag.replace(/_/g, " ")) : "—"}
           sub={fpi.tag ? "primary this week" : null}
+          accent="purple"
         />
       </div>
 
@@ -156,9 +161,9 @@ export default function Dashboard() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Performance Trend</p>
           <div className="flex gap-4">
             {[
-              { color: "#D4A520", label: "Execution Score", dash: false },
-              { color: "#2dd4bf", label: "Planning Accuracy", dash: true },
-              { color: "#ef4444", label: "Deferral Rate",     dash: true },
+              { color: "#F97316", label: "Execution Score",   dash: false },
+              { color: "#06B6D4", label: "Planning Accuracy", dash: true  },
+              { color: "#F43F5E", label: "Deferral Rate",     dash: true  },
             ].map(({ color, label, dash }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className="w-5 h-0.5 rounded inline-block"
@@ -208,20 +213,39 @@ export default function Dashboard() {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function MetricCard({ label, value, suffix = "", sub, dot, highlight }) {
+const ACCENT_PALETTE = {
+  orange: { color: "#F97316", glow: "rgba(249,115,22,0.18)", border: "rgba(249,115,22,0.45)" },
+  teal:   { color: "#06B6D4", glow: "rgba(6,182,212,0.18)",  border: "rgba(6,182,212,0.45)"  },
+  pink:   { color: "#F43F5E", glow: "rgba(244,63,94,0.18)",  border: "rgba(244,63,94,0.45)"  },
+  blue:   { color: "#60A5FA", glow: "rgba(96,165,250,0.18)", border: "rgba(96,165,250,0.45)" },
+  purple: { color: "#A855F7", glow: "rgba(168,85,247,0.18)", border: "rgba(168,85,247,0.45)" },
+  gold:   { color: "#D4A520", glow: "rgba(212,165,32,0.18)", border: "rgba(212,165,32,0.45)" },
+};
+
+function MetricCard({ label, value, suffix = "", sub, dot, accent }) {
   const dotColor = dot === "green" ? "#10b981"
     : dot === "amber" ? "#f59e0b"
     : dot === "red"   ? "#ef4444"
     : null;
 
+  const ac = ACCENT_PALETTE[accent] || null;
+
   return (
-    <div className={`card p-5 flex flex-col gap-2 ${highlight ? "border-gold/30" : ""}`}>
+    <div
+      className="card p-5 flex flex-col gap-2 transition-all duration-300 hover:brightness-110"
+      style={ac ? {
+        borderTopColor: ac.border,
+        borderTopWidth: 2,
+        boxShadow: `0 0 28px ${ac.glow}, 0 1px 0 ${ac.border} inset`,
+      } : {}}
+    >
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500 uppercase tracking-wider">{label}</span>
         {dotColor && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} />}
       </div>
       <div className="flex items-end gap-1 mt-1">
-        <span className={`text-2xl font-semibold leading-none ${highlight ? "text-gold" : "text-white"}`}>
+        <span className="text-2xl font-semibold leading-none"
+          style={{ color: ac ? ac.color : "white" }}>
           {value}
         </span>
         {suffix && <span className="text-sm text-gray-500 mb-0.5">{suffix}</span>}

@@ -62,7 +62,7 @@ export default function AIReviewPanel({ review, onGenerate, generating }) {
           )}
           {review.intervention && (
             <Section label="Intervention">
-              <div className="border-l-2 border-gold pl-4">
+              <div className="border-l-2 pl-4" style={{ borderColor: "#06B6D4" }}>
                 <p className="text-sm text-white leading-relaxed">{review.intervention}</p>
               </div>
             </Section>
