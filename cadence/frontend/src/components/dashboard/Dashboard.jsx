@@ -87,6 +87,28 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
 
+      {/* App intro */}
+      <div className="rounded-lg p-5 border border-dark-border" style={{ background: "#000" }}>
+        <h1 className="text-lg font-semibold text-white mb-1">Welcome to Cadence</h1>
+        <p className="text-sm text-gray-300 leading-relaxed mb-3">
+          Your AI-powered weekly operating system for executives, founders, and senior leaders.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <p className="text-xs font-semibold text-gold uppercase tracking-widest mb-1">What it does</p>
+            <p className="text-xs text-gray-300 leading-relaxed">Tracks your execution quality every week — priorities, tasks, deep work, and friction — then delivers an AI coaching report grounded in the world's top leadership frameworks.</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gold uppercase tracking-widest mb-1">Who it's for</p>
+            <p className="text-xs text-gray-300 leading-relaxed">Leaders who set priorities on Monday and wonder on Friday why they didn't happen. Founders, CEOs, VPs, and directors who want data-driven insight into their own performance.</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gold uppercase tracking-widest mb-1">The goal</p>
+            <p className="text-xs text-gray-300 leading-relaxed">Close the gap between what you intend to do and what you actually do — every single week — at a fraction of the cost of a traditional executive coach.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Week navigation header */}
       <div className="flex items-center justify-between">
         <div>
